@@ -1,0 +1,5 @@
+source https://api.nuget.org/v3/index.json
+
+nuget FSharp.Core
+nuget Argu 3.7.0
+nuget System.Console 4.3.0
