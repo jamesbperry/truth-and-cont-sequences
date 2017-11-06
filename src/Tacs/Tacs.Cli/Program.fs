@@ -11,8 +11,11 @@ let parseCli (parser:ArgumentParser<TacsArgs>) =
         | :? Argu.ArguParseException  -> None // return missing
 
 let message (arguments:ParseResults<TacsArgs>) =
-    let slice = arguments.Contains <@ Slice @>
-    if (slice) then printfn "Slice'em and dice'em"
+    let aggregate = arguments.GetResult <@ Aggregate @>
+    let windowed = aggregate.GetResult <@ Windowed @>
+    let sliding = windowed.GetResult <@ Sliding @>
+    let size = sliding.GetResult <@ Of @>
+    printfn "You said %s" size
 
 [<EntryPoint>]
 let main argv =

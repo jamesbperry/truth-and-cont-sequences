@@ -2,6 +2,10 @@
 
 open Argu
 
+type WindowSizeStrategy =
+    | Width = 0
+    | Count = 1
+
 type BoundaryStrategy =
     | Interpolated = 0
     | InsideInclusive = 1
@@ -42,30 +46,16 @@ with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | ToDo -> "Not yet implemented."
-and CountSlidingWindowArgs =
-    | [<AltCommandLine("-c")>] Count of count:int
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Count _ -> "The (maximum) number of events which will be included in each window."
-and WidthSlidingWindowArgs =
-    | [<AltCommandLine("-w")>] Width of width:string
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Width _ -> "The size of each window."    
+            | ToDo -> "Not yet implemented." 
 and SlidingWindowArgs = 
-    | [<CliPrefix(CliPrefix.None)>] ByCount of ParseResults<CountSlidingWindowArgs>
-    | [<CliPrefix(CliPrefix.None)>] ByWidth of ParseResults<WidthSlidingWindowArgs>
+    | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
+    | [<CliPrefix(CliPrefix.None)>] Of of ``of``:string
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | ByCount _ -> "Windows are sized by a maximum event count."
-            | ByWidth _ -> "Windows are sized by a fixed width."
+            | By _ -> "Sizing strategy for the windows."
+            | Of _ -> "Size of the windows."
 and HoppingWindowArgs = 
     | [<AltCommandLine("-w")>] Width of width:string
     | [<AltCommandLine("-cw")>] Hop of hop:string
@@ -84,15 +74,24 @@ with
             match this with
             | Sliding _ -> "A window is generated for each event, with the event as the window end"
             | Hopping _ -> "Windows advance by a constant position value"
-and AggregateArgs =
-    | [<CliPrefix(CliPrefix.None)>] Windowing of ParseResults<WindowedArgs> option
-    | [<AltCommandLine("-o")>] Operation of operation:AggregationOperations
-    | [<Last;AltCommandLine("-c")>] Config of config:string list
+and NonWindowedArgs =
+    | Confirm
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | Windowing _ -> "Optional windowing strategy."
+            | Confirm -> "Dummy"   
+and AggregateArgs =
+    | [<CliPrefix(CliPrefix.None)>] Windowed of ParseResults<WindowedArgs>
+    | [<CliPrefix(CliPrefix.None)>] All of ParseResults<NonWindowedArgs>
+    | [<AltCommandLine("-o")>] Operation of operation:AggregationOperations
+    | [<AltCommandLine("-c")>] Config of config:string list
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | Windowed _ -> "Optional windowing strategy."
+            | All _ -> ""
             | Operation _ -> "The operation to be applied."
             | Config _ -> "Parameters for the aggregation operation."
 and SliceArgs =
