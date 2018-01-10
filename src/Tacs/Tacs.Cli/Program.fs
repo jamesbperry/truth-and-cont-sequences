@@ -1,6 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open Argu
+﻿open Argu
 open Arguments
 
 let parseCli (parser:ArgumentParser<TacsArgs>) = 

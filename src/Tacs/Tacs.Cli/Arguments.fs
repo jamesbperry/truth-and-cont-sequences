@@ -18,6 +18,7 @@ type CompressionStrategy =
     | Custom = 1
     | SwingingDoor  = 2
     | LCA = 3
+    | Plot = 4
 
 type AggregationOperations =
     | None = 0
@@ -30,6 +31,11 @@ type AggregationOperations =
     | Vrange = 7
     | Krange = 8
 
+type Anchor =
+    | Start
+    | End
+    | Position of position:string
+
 [<CliPrefix(CliPrefix.Dash)>]
 type CompressArgs =
     | [<AltCommandLine("-s")>] Strategy of strategy:CompressionStrategy
@@ -40,13 +46,28 @@ with
             match this with
             | Strategy _ -> "Compression strategy to use."
             | Config _ -> "Parameters for the compression strategy."
-and SampleArgs =
-    | [<AltCommandLine("-todo")>] ToDo
+and IntervalsSampleArgs =
+    | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
+    | [<CliPrefix(CliPrefix.None)>] Of of ``of``:string
+    | [<CliPrefix(CliPrefix.None)>] AlignedTo of alignedTo:Anchor
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | ToDo -> "Not yet implemented." 
+            | By _ -> "Window sizing strategy."
+            | Of _ -> "The window size."
+            | AlignedTo _ -> "The point to fix as a window boundary."
+and SampleArgs =
+    | [<CliPrefix(CliPrefix.None)>] At of atOne:string
+    | [<CliPrefix(CliPrefix.None)>] Many of atMany:string list
+    | [<CliPrefix(CliPrefix.None)>] Intervals of intervals:IntervalsSampleArgs
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | At _ -> "Sample at one specified position." 
+            | Many _ -> "Sample at many specified positions." 
+            | Intervals _ -> "Sample intervals of equal length or count." 
 and SlidingWindowArgs = 
     | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
     | [<CliPrefix(CliPrefix.None)>] Of of ``of``:string
@@ -75,12 +96,12 @@ with
             | Sliding _ -> "A window is generated for each event, with the event as the window end"
             | Hopping _ -> "Windows advance by a constant position value"
 and NonWindowedArgs =
-    | Confirm
+    | [<Hidden>] Dummy
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | Confirm -> "Dummy"   
+            | Dummy -> "Not used. This enclosing type exists in contrast to Windowed, since nested types can't be optional."   
 and AggregateArgs =
     | [<CliPrefix(CliPrefix.None)>] Windowed of ParseResults<WindowedArgs>
     | [<CliPrefix(CliPrefix.None)>] All of ParseResults<NonWindowedArgs>
@@ -112,6 +133,7 @@ with
 and TacsArgs =
     | [<AltCommandLine("-i")>] Input of input:string option
     | [<AltCommandLine("-o")>] Output of output:string option
+    | [<CliPrefix(CliPrefix.None)>] Remodel
     | [<CliPrefix(CliPrefix.None)>] Slice of ParseResults<SliceArgs>
     | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
     | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>
@@ -122,6 +144,7 @@ with
             match this with
             | Input _ -> "Read input stream from a file. If not specified, expects stdin."
             | Output _ -> "Write resultant stream to a file. If not specified, writes to stdout."
+            | Remodel _ -> "Transform a series of discrete points into a series of intervals, and vice versa."
             | Slice _ -> "Slice the input stream by minimum and/or maximum position values."
             | Aggregate _ -> "Aggregate the input stream."
             | Sample _ -> "Sample the input stream."

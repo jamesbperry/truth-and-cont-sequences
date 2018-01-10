@@ -8,8 +8,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{814D7D
 		paket.dependencies = paket.dependencies
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tacs.CoreCS", "Tacs.CoreCS\Tacs.CoreCS.csproj", "{31B8A5B8-D663-4626-B865-9B831946A047}"
-EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Tacs.Core", "Tacs.Core\Tacs.Core.fsproj", "{E94C1114-5A23-4D3F-A180-8CA5ECEF22A8}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Tacs.Cli", "Tacs.Cli\Tacs.Cli.fsproj", "{DB60EFC0-2E5D-4FA5-822A-B7B58844794A}"
