@@ -93,7 +93,7 @@ module Types =
     //     | PositionValues of PointValue<'a, 'b> list
     //     | IntervalValues of IntervalValue<'a, 'b> list
 
-    type PointSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; values:PointValue<'a,'b> list }
+    type PointSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; ptvalues:PointValue<'a,'b> list }
 
-    type IntervalSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; values:IntervalValue<'a,'b> list }
+    type IntervalSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; intvalues:IntervalValue<'a,'b> list }
 

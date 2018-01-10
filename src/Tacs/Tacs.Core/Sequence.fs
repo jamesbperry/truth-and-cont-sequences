@@ -12,7 +12,7 @@ module Sequence =
                 | (h ,None) :: tail -> (v,h ) :: tail //discards the above
                 | (h,_) :: _ -> (v, h) :: state
 
-        let ptPairs = Seq.foldBack pairFolder (inseq.values |> Seq.map Some) []
+        let ptPairs = Seq.foldBack pairFolder (inseq.ptvalues |> Seq.map Some) []
 
         let toIntervals (ps,pe) =
             let ie = match inseq.interp with
@@ -42,4 +42,4 @@ module Sequence =
             | ExtrapolationStrategy.BeforeAndAfter -> intervals |> withPreExtrap |> withPostExtrap
             | _ -> intervals
 
-        {id=inseq.id; interp=inseq.interp; extrap=inseq.extrap; values=intervalsExtrap}
+        {id=inseq.id; interp=inseq.interp; extrap=inseq.extrap; intvalues=intervalsExtrap}

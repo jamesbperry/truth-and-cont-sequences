@@ -48,7 +48,7 @@ with
             | Config _ -> "Parameters for the compression strategy."
 and IntervalsSampleArgs =
     | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
-    | [<CliPrefix(CliPrefix.None)>] Of of ``of``:string
+    | [<CliPrefix(CliPrefix.None)>] Of of ofsize:string
     | [<CliPrefix(CliPrefix.None)>] AlignedTo of alignedTo:Anchor
 with
     interface IArgParserTemplate with
@@ -60,7 +60,7 @@ with
 and SampleArgs =
     | [<CliPrefix(CliPrefix.None)>] At of atOne:string
     | [<CliPrefix(CliPrefix.None)>] Many of atMany:string list
-    | [<CliPrefix(CliPrefix.None)>] Intervals of intervals:IntervalsSampleArgs
+    | [<CliPrefix(CliPrefix.None)>] Intervals of ParseResults<IntervalsSampleArgs>
 with
     interface IArgParserTemplate with
         member this.Usage =
