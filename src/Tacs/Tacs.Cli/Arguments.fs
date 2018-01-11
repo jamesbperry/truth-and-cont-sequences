@@ -31,10 +31,10 @@ type AggregationOperations =
     | Vrange = 7
     | Krange = 8
 
-type Anchor =
-    | Start
-    | End
-    | Position of position:string
+type Extent =
+    | Start = 0
+    | End = 1
+
 
 [<CliPrefix(CliPrefix.Dash)>]
 type CompressArgs =
@@ -46,10 +46,19 @@ with
             match this with
             | Strategy _ -> "Compression strategy to use."
             | Config _ -> "Parameters for the compression strategy."
+and AnchorzArgs =
+    | RelativeTo of anchorRel:Extent
+    | AtPosition of anchorAt:string
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | RelativeTo _ -> "Anchor relative to the start or end of the sequence."
+            | AtPosition _ -> "Anchor to a specific position."
 and IntervalsSampleArgs =
     | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
     | [<CliPrefix(CliPrefix.None)>] Of of ofsize:string
-    | [<CliPrefix(CliPrefix.None)>] AlignedTo of alignedTo:Anchor
+    | [<CliPrefix(CliPrefix.None)>] AlignedTo of ParseResults<AnchorzArgs>
 with
     interface IArgParserTemplate with
         member this.Usage =
@@ -70,7 +79,7 @@ with
             | Intervals _ -> "Sample intervals of equal length or count." 
 and SlidingWindowArgs = 
     | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
-    | [<CliPrefix(CliPrefix.None)>] Of of ``of``:string
+    | [<CliPrefix(CliPrefix.None)>] Of of ofSize:string
 with
     interface IArgParserTemplate with
         member this.Usage =
@@ -130,10 +139,17 @@ with
             | Count _ -> "Return only this number of values. Positive number counts from start; negative counts from end."
             | End _ -> "Truncate the end of the input stream."
             | EndStrategy _ -> "How the end point is enforced."
+and RemodelArgs =
+    | [<Hidden>] Dummy of dummy:string option
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | _ -> "Remodel has no arguments, but uses a ParserTemplate for uniformity with other top-level operations."
 and TacsArgs =
     | [<AltCommandLine("-i")>] Input of input:string option
     | [<AltCommandLine("-o")>] Output of output:string option
-    | [<CliPrefix(CliPrefix.None)>] Remodel
+    | [<CliPrefix(CliPrefix.None)>] Remodel of ParseResults<RemodelArgs>
     | [<CliPrefix(CliPrefix.None)>] Slice of ParseResults<SliceArgs>
     | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
     | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>

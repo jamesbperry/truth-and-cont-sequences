@@ -1,6 +1,8 @@
 source https://api.nuget.org/v3/index.json
+source https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 
 nuget FSharp.Core
 nuget Argu 3.7.0
 nuget FSharp.Data
 nuget System.Console 4.3.0
+nuget NETStandard.Library
