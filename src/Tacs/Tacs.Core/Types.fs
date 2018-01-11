@@ -9,13 +9,18 @@ module Types =
         | OutsideInclusive = 3
         | OutsideExclusive = 4
 
+    type RemodelAnchor =
+        | IntervalStart
+        //| IntervalMidpoint //todo
+        | IntervalEnd
+
     type Remodel<'a> =
         | ToPoints
         | ToIntervals
 
     type Boundary<'a> = { location:'a; strategy:BoundaryStrategy }
 
-    type IntervalSlice<'a> = { start:Boundary<'a>; ``end``:Boundary<'a>; }
+    type IntervalSlice<'a> = { start:Boundary<'a> option; ``end``:Boundary<'a> option; }
     type ForwardSlice<'a> = { start:Boundary<'a>; count:int; }
     type BackwardSlice<'a> = {count:int; ``end``:Boundary<'a>; }
 
@@ -87,11 +92,14 @@ module Types =
     
     type PointValue<'a, 'b> =  { position:'a; value:'b }
 
-    type IntervalValue<'a, 'b> = { start:PointValue<'a,'b> option; ``end``:PointValue<'a,'b> option } //Intervals can be open to allow extrapolation
+    type FiniteIntervalValue<'a,'b> = { start:PointValue<'a,'b>; ``end``:PointValue<'a,'b> }
+    type ForwardRayIntervalValue<'a,'b> = { start:PointValue<'a,'b> }  //Intervals can be open to represent extrapolation
+    type BackwardRayIntervalValue<'a,'b> = { ``end``:PointValue<'a,'b> }
 
-    // type Values<'a, 'b> =
-    //     | PositionValues of PointValue<'a, 'b> list
-    //     | IntervalValues of IntervalValue<'a, 'b> list
+    type IntervalValue<'a,'b> =
+        | FiniteIntervalValue of FiniteIntervalValue<'a,'b>
+        | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
+        | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
 
     type PointSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; ptvalues:PointValue<'a,'b> list }
 
