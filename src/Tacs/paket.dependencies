@@ -6,3 +6,12 @@ nuget Argu 3.7.0
 nuget FSharp.Data
 nuget System.Console 4.3.0
 nuget NETStandard.Library
+
+github fsprojects/FsUnit src/FsUnit.NUnit/FsUnit.fs
+
+group Test
+    source https://api.nuget.org/v3/index.json
+    nuget Microsoft.NET.Test.Sdk 15.5.0
+    nuget NUnit.Console
+    nuget NUnit
+    nuget NUnit3TestAdapter
