@@ -100,13 +100,3 @@ module Types =
         | FiniteIntervalValue of FiniteIntervalValue<'a,'b>
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
-
-    type ISequencePositionType<'p> = //,'dp> =
-        // abstract member Diff: 'p -> 'p -> 'dp
-        // abstract member Add: 'p -> 'dp -> 'p
-        // abstract member Div: 'dp -> 'dp -> float
-        abstract member Scale: 'p -> 'p -> 'p -> float
-
-    type ISequenceValueStrategy<'p,'v> =
-        abstract member Interpolate: FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>
-        abstract member Strategy : InterpolationStrategy with get

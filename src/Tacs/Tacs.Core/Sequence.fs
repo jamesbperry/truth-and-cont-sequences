@@ -4,9 +4,9 @@ module Sequence =
 
     open Types
 
-    type PointSequence<'p, 'v> = { id:string; interp:ISequenceValueStrategy<'p,'v>; extrap:ExtrapolationStrategy; ptvalues:PointValue<'p,'v> list }
+    type PointSequence<'p, 'v> = { id:string; interp:(FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>); extrap:ExtrapolationStrategy; ptvalues:PointValue<'p,'v> list }
 
-    type IntervalSequence<'p, 'v> = { id:string; interp:ISequenceValueStrategy<'p,'v>; extrap:ExtrapolationStrategy; intvalues:IntervalValue<'p,'v> list }
+    type IntervalSequence<'p, 'v> = { id:string; interp:(FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>); extrap:ExtrapolationStrategy; intvalues:IntervalValue<'p,'v> list }
 
     let remodelToIntervals (ptseq:PointSequence<'a,'b>) : IntervalSequence<'a,'b> =
 
@@ -19,15 +19,10 @@ module Sequence =
         let ptPairs = Seq.foldBack pairFolder (ptseq.ptvalues |> Seq.map Some) []
 
         let toIntervals (ps,pe) =
-            let ie = 
-                match ptseq.interp.Strategy with
-                | Step ->
-                    match (ps,pe) with
-                        | (Some s, Some e) -> Some {position=e.position; value=s.value}
-                        | (_,_) -> None
-                | Linear -> pe
-            match (ps, ie) with
-            | (Some is, Some ie) -> FiniteIntervalValue {start=is; ``end``=ie}
+            match (ps, pe) with
+            | (Some is, Some pev) -> 
+                let ie = ptseq.interp {start=is; ``end``=pev} pev.position
+                FiniteIntervalValue {start=is; ``end``=ie}
             | (Some is, None) -> ForwardRayIntervalValue {start=is}
             | (None, Some ie) -> BackwardRayIntervalValue {``end``=ie}
             | _ -> failwithf "Invalid interval with no start or end"
@@ -80,7 +75,7 @@ module Sequence =
 
         {id=inseq.id;extrap=inseq.extrap;interp=inseq.interp;ptvalues=ptvals}    
 
-    let getValue (istrat:ISequenceValueStrategy<'a,'b>) (intval:IntervalValue<'a,'b>) (pos:'a) : PointValue<'a,'b> =
+    let getValue (interp) (intval:IntervalValue<'a,'b>) (pos:'a) : PointValue<'a,'b> =
         let contains (v:IntervalValue<'a,'b>) (p:'a) =
             match v with
             | FiniteIntervalValue fiv -> LanguagePrimitives.GenericGreaterOrEqual p fiv.start.position && LanguagePrimitives.GenericLessOrEqual p fiv.``end``.position
@@ -93,7 +88,7 @@ module Sequence =
 
         let v =
             match intval with
-            | FiniteIntervalValue fiv -> istrat.Interpolate fiv pos
+            | FiniteIntervalValue fiv -> interp fiv pos
             | ForwardRayIntervalValue friv -> {position=pos;value=friv.start.value}
             | BackwardRayIntervalValue briv -> {position=pos;value=briv.``end``.value}
 
