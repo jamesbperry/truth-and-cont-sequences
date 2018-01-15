@@ -89,7 +89,7 @@ module Types =
         | BeforeFirst = 1
         | AfterLast = 2
         | BeforeAndAfter = 3   
-    
+
     type PointValue<'a, 'b> =  { position:'a; value:'b }
 
     type FiniteIntervalValue<'a,'b> = { start:PointValue<'a,'b>; ``end``:PointValue<'a,'b> }
@@ -101,7 +101,12 @@ module Types =
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
 
-    type PointSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; ptvalues:PointValue<'a,'b> list }
+    type ISequencePositionType<'p> = //,'dp> =
+        // abstract member Diff: 'p -> 'p -> 'dp
+        // abstract member Add: 'p -> 'dp -> 'p
+        // abstract member Div: 'dp -> 'dp -> float
+        abstract member Scale: 'p -> 'p -> 'p -> float
 
-    type IntervalSequence<'a, 'b> = { id:string; interp:InterpolationStrategy; extrap:ExtrapolationStrategy; intvalues:IntervalValue<'a,'b> list }
-
+    type ISequenceValueStrategy<'p,'v> =
+        abstract member Interpolate: FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>
+        abstract member Strategy : InterpolationStrategy with get
