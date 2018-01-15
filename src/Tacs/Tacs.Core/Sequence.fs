@@ -75,27 +75,42 @@ module Sequence =
 
         {id=inseq.id;extrap=inseq.extrap;interp=inseq.interp;ptvalues=ptvals}    
 
-    let getValue (interp) (intval:IntervalValue<'a,'b>) (pos:'a) : PointValue<'a,'b> =
-        let contains (v:IntervalValue<'a,'b>) (p:'a) =
-            match v with
-            | FiniteIntervalValue fiv -> LanguagePrimitives.GenericGreaterOrEqual p fiv.start.position && LanguagePrimitives.GenericLessOrEqual p fiv.``end``.position
-            | ForwardRayIntervalValue friv -> LanguagePrimitives.GenericGreaterOrEqual p friv.start.position
-            | BackwardRayIntervalValue briv -> LanguagePrimitives.GenericLessOrEqual p briv.``end``.position
-        
-        let contained = contains intval pos
-        if (not contained) then failwithf "Requested position is outside interval."
+    let intervalContains (int:IntervalValue<'a,'b> option) (pos:'a) =
+            match int with
+            | Some (FiniteIntervalValue fiv) -> (fiv.start.position <= pos) && (fiv.``end``.position >= pos)
+            | Some (BackwardRayIntervalValue briv) -> briv.``end``.position >= pos
+            | Some (ForwardRayIntervalValue friv) -> friv.start.position <= pos
+            | _ -> false
 
+    let getIntervalAtOrBefore (vals:IntervalValue<'a,'b> list) (pos:'a) =
+        let rec atOrBefore pos rem (prev:IntervalValue<'a,'b> option) = 
+            match rem with
+            | [] -> None
+            | (FiniteIntervalValue h) :: t -> if h.start.position > pos then prev else atOrBefore pos t (Some (FiniteIntervalValue h))
+            | (BackwardRayIntervalValue h) :: t -> atOrBefore pos t (Some (BackwardRayIntervalValue h))
+            | [(ForwardRayIntervalValue h)] -> if h.start.position > pos then (Some (ForwardRayIntervalValue h)) else None
+            | _ :: t -> atOrBefore pos t prev
+        atOrBefore pos vals None        
 
+    let getPointInInterval (interp) (int:IntervalValue<'a,'b> option) (pos:'a) : PointValue<'a,'b> option =
+
+        let contained = intervalContains int pos
+        let intopt = if contained then int else None
         let v =
-            match intval with
-            | FiniteIntervalValue fiv -> interp fiv pos
-            | ForwardRayIntervalValue friv -> {position=pos;value=friv.start.value}
-            | BackwardRayIntervalValue briv -> {position=pos;value=briv.``end``.value}
-
+            match intopt with
+            | Some (FiniteIntervalValue fiv) -> Some (interp fiv pos)
+            | Some (ForwardRayIntervalValue friv) -> Some {position=pos;value=friv.start.value}
+            | Some (BackwardRayIntervalValue briv) -> Some {position=pos;value=briv.``end``.value}
+            | _ -> None
         v
+    let getPointInSequence (inseq:IntervalSequence<'a,'b>) (pos:'a) =
+        let prev = getIntervalAtOrBefore inseq.intvalues pos
+        getPointInInterval inseq.interp prev pos
 
-    // let sliceForward (b:ForwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+    // let sliceForwardByCount (b:ForwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
         
+    //     getValue inseq.interp 
+
     //     let rec filter bound vals =
     //         match vals with
     //         | [] ->
