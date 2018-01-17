@@ -3,11 +3,9 @@ namespace Tacs.Core
 module Types =
 
     type BoundaryStrategy = 
-        | Interpolated = 0
-        | InsideInclusive = 1
-        | InsideExclusive = 2
-        | OutsideInclusive = 3
-        | OutsideExclusive = 4
+        | Inside
+        | Interpolated
+        | Intersected
 
     type RemodelAnchor =
         | IntervalStart
@@ -100,3 +98,5 @@ module Types =
         | FiniteIntervalValue of FiniteIntervalValue<'a,'b>
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
+
+    type SplitIntervalValue<'a,'b> = {before:IntervalValue<'a,'b> option;after:IntervalValue<'a,'b> option}    

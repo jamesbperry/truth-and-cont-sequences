@@ -3,16 +3,18 @@ namespace Tacs.Core
  module Numerics =
 
     open Types
-    open System
+
+    let inline ClampScale (v:'a) =
+        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
     let FloatPositionScale (low:float) (high:float) (at:float) =
-                (at - low)/(high - low)                 
+                ClampScale <| (at - low)/(high - low)           
 
     let IntPositionScale (low:int) (high:int) (at:int) =
-                (float (at - low))/(float (high - low))                  
+                ClampScale <| (float (at - low))/(float (high - low))                  
 
     let TimePositionScale (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
-                (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
+                ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
     let InterpolateFloat (strat:InterpolationStrategy) (pScaler) (iv:FiniteIntervalValue<'p,float>) (pos:'p) : PointValue<'p,float> =
         let interpLin (v:FiniteIntervalValue<'p,float>) p : PointValue<'p,float> =
