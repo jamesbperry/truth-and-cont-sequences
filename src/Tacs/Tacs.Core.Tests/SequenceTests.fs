@@ -141,7 +141,7 @@ let ``unbounded-end interval slice should produce correct subsequence`` () =
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
 
 [<Test>]
-let ``forward slice should produce correct subsequence`` () =
+let ``forward interpolated slice should produce correct subsequence`` () =
     let allvals = [
         BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
         FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
@@ -160,3 +160,136 @@ let ``forward slice should produce correct subsequence`` () =
         FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
         ForwardRayIntervalValue {start={position=4.0;value=4.0}}];
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``forward intersected slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {ForwardSlice.start={location=1.5;strategy=BoundaryStrategy.Intersected};count=3}   
+    let subseq = sliceForwardByCount slstrat fullseq
+    let expectedvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        ForwardRayIntervalValue {start={position=4.0;value=4.0}}];
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``forward inside slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {ForwardSlice.start={location=1.5;strategy=BoundaryStrategy.Inside};count=2}   
+    let subseq = sliceForwardByCount slstrat fullseq
+    let expectedvals = [
+        BackwardRayIntervalValue {``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        ForwardRayIntervalValue {start={position=4.0;value=4.0}}];
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``overflowing forward inside slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {ForwardSlice.start={location=0.5;strategy=BoundaryStrategy.Inside};count=200}   
+    let subseq = sliceForwardByCount slstrat fullseq
+    let expectedvals = allvals
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)
+
+[<Test>]
+let ``backward interpolated slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {BackwardSlice.``end``={location=3.5;strategy=BoundaryStrategy.Interpolated};count=2}   
+    let subseq = sliceBackwardByCount slstrat fullseq
+    let expectedvals = [
+        BackwardRayIntervalValue {``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=3.5;value=3.5}};
+        ForwardRayIntervalValue {start={position=3.5;value=3.5}}];
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``backward intersected slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {BackwardSlice.``end``={location=3.5;strategy=BoundaryStrategy.Intersected};count=2}   
+    let subseq = sliceBackwardByCount slstrat fullseq
+    let expectedvals = [
+        BackwardRayIntervalValue {``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        ForwardRayIntervalValue {start={position=4.0;value=4.0}}];
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``backward inside slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {BackwardSlice.``end``={location=4.5;strategy=BoundaryStrategy.Inside};count=2}   
+    let subseq = sliceBackwardByCount slstrat fullseq
+    let expectedvals = [
+        BackwardRayIntervalValue {``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        ForwardRayIntervalValue {start={position=4.0;value=4.0}}];
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
+
+[<Test>]
+let ``overflowing backward inside slice should produce correct subsequence`` () =
+    let allvals = [
+        BackwardRayIntervalValue {``end``={position=1.0;value=1.0}};
+        FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=2.0;value=2.0}};
+        FiniteIntervalValue {start={position=2.0;value=2.0};``end``={position=3.0;value=3.0}};
+        FiniteIntervalValue {start={position=3.0;value=3.0};``end``={position=4.0;value=4.0}};
+        FiniteIntervalValue {start={position=4.0;value=4.0};``end``={position=5.0;value=5.0}};
+        ForwardRayIntervalValue {start={position=5.0;value=5.0}}];
+    let vstrat = InterpolateFloat Linear FloatPositionScale    
+    let fullseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;intvalues=allvals}
+    let slstrat = {BackwardSlice.``end``={location=5.5;strategy=BoundaryStrategy.Inside};count=200}   
+    let subseq = sliceBackwardByCount slstrat fullseq
+    let expectedvals = allvals
+    Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)

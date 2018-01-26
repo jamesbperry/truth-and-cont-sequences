@@ -264,21 +264,27 @@ module Sequence =
 
         {inseq with intvalues=ctrim}
 
-    // let sliceBackwardByCount (s:BackwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
-       
-    //     let vr = List.rev inseq.intvalues
-    //     let vrt = List.skipWhile (fun iv -> not (intervalContains s.``end``.location iv)) vr //TODO respect strategy
-    //     let vrc = List.take s.count vrt
-    //     let vri = 
-    //         match vrc with
-    //             | [] -> []
-    //             | (h :: t) -> 
-    //                 let hi = getIntervalAtOrBefore [h] s.``end``.location //TODO respect strategy
-    //                 match hi with
-    //                 | Some hiv -> hiv :: t
-    //                 | None -> t                   
-    //     let vc = List.rev vri
-    //     {inseq with intvalues=vc}
+    let sliceBackwardByCount (s:BackwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+        let fiSlice = {IntervalSlice.start=None;IntervalSlice.``end``=Some s.``end``}
+        let trimseq = sliceByInterval fiSlice inseq
+        let tvr = List.rev trimseq.intvalues
+        let count =
+            let rc = 
+                match inseq.extrap with
+                | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.BeforeAndAfter -> s.count + 1
+                | _ -> s.count
+            System.Math.Min (tvr.Length, rc)
+        let svr = List.take count tvr
+        let sv = List.rev svr
+        let sve =
+            match sv with
+            | [] -> []
+            | (h::t) -> 
+                let beo = extrapolateTo inseq.extrap h
+                match beo with
+                | Some be -> be :: sv
+                | _ -> sv
+        {inseq with intvalues=sve}
         
 
         

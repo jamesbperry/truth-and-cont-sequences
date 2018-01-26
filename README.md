@@ -39,10 +39,10 @@ Continuous data comes from things that aren't physical sensors, too. Our next ex
 The biggest challenge there? Volume. Specialized databases address this: [Berengei](https://code.facebook.com/posts/952820474848503/beringei-a-high-performance-time-series-storage-engine/) and [InfluxDB](https://en.wikipedia.org/wiki/InfluxDB), for example. The former uses "delta-of-delta" encoding, which is [nicely explained in section 4.1](http://www.vldb.org/pvldb/vol8/p1816-teller.pdf) of the paper on its predecessor.
 
 ## Time-series data
-In the datacenter case, two things greatly simplify the situation: 
+In the datacenter case, three things greatly simplify the situation: 
 * individual readings aren't mission-critical (i.e. we're after the big picture)
 * the readings are evenly spaced (or considered as such)
-* closed-world assumption (no value at a timestamp? -> no data then)
+* closed-world assumption (no value at a timestamp? -> no data then.)
 
 These may not seem like a big deal, but in fact are *huge.* We can use traditional stream-processing techniques: windowing the values and disregarding their timestamps within the ensuing calculation. Traditional record-oriented aggregations fit as well: SELECTing a time range, then GROUPing and AVERAGEing the values. Aside from volume, this data isn't so uncomfortable!
 
@@ -90,9 +90,9 @@ all of which are true. But there's more. Consider:
 //TODO - data gaps
 
 //TODO - all of this
-### SmartThings
+### Home & Commercial IoT
 
-A great example of real-world sensor data that gets reported as-needed
+Platforms like [SmartThings](https://www.smartthings.com/) are an approachable way to add sensors around the house and office. SmartThings can control, for example, a smart outlet -- and also log the outlet's reports of power draw.
 
 ### Libraries
 
