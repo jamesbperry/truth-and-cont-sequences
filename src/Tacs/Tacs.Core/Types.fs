@@ -39,17 +39,16 @@ module Types =
         | Hopping of HoppingWindowing<'a>
 
     type AggregationOperation =
-        | None = 0
-        | Custom = 1
-        | Integral = 2
-        | Avg = 3
-        | Max = 4
-        | Min = 5
-        | Std = 6
-        | Vrange = 7
-        | Krange = 8
+        | NoOp
+        | Custom of string
+        | Integral
+        | Avg
+        | Max
+        | Min
+        | Std
+        | Range
 
-    type Aggregate<'a> = { windowing:Windowing<'a>; operation:AggregationOperation; config:string }
+    type Aggregate<'a> = { windowing:Windowing<'a>; operation:AggregationOperation; }
 
     type Anchor<'a> =
         | Start
@@ -90,8 +89,8 @@ module Types =
 
     type PointValue<'a, 'b> =  { position:'a; value:'b }
 
-    type FiniteIntervalValue<'a,'b> = { start:PointValue<'a,'b>; ``end``:PointValue<'a,'b> }
-    type ForwardRayIntervalValue<'a,'b> = { start:PointValue<'a,'b> }  //Intervals can be open to represent extrapolation
+    type FiniteIntervalValue<'a,'b> = { start:PointValue<'a,'b>; ``end``:PointValue<'a,'b>; }
+    type ForwardRayIntervalValue<'a,'b> = { start:PointValue<'a,'b>;  }  //Intervals can be open to represent extrapolation
     type BackwardRayIntervalValue<'a,'b> = { ``end``:PointValue<'a,'b> }
 
     type IntervalValue<'a,'b> =
@@ -99,4 +98,19 @@ module Types =
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
 
-    type SplitIntervalValue<'a,'b> = {before:IntervalValue<'a,'b> option;after:IntervalValue<'a,'b> option}    
+    type SplitIntervalValue<'a,'b> = {before:IntervalValue<'a,'b> option;after:IntervalValue<'a,'b> option}  
+    
+    type InterpolationFunction<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v> option
+    type AggregationFunction<'p,'v> = IntervalValue<'p,'v> seq -> IntervalValue<'p,'v>
+
+    //TODO move this...
+    let Interpolate (pinterp) (vinterp) (iv:FiniteIntervalValue<'p,'v>) (p:'p) : PointValue<'p,'v> =
+        let s = 1.0 * pinterp iv p
+        let v = vinterp iv s
+        {position=p;value=v}    
+
+    let InterpolateValuePositiveStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
+        iv.start.value
+ 
+    let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
+        iv.``end``.value  

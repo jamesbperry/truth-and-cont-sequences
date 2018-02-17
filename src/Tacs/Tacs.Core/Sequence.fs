@@ -177,6 +177,13 @@ module Sequence =
         | Some e -> [e]
         | None -> []
 
+    let removeExtrapolation (invals:IntervalValue<'a,'b> list) : (FiniteIntervalValue<'a,'b> list) =
+        let tryFinite iv =
+            match iv with
+            | FiniteIntervalValue fiv -> Some fiv
+            | _ -> None
+        List.choose tryFinite invals
+
     let getIntervalsAtAndAfter  (inseq:IntervalSequence<'a,'b>) (strat:BoundaryStrategy) (pos:'a) =
         let rec trimmer (p:'a) (rem:IntervalValue<'a,'b> list) =
             match rem with
@@ -285,6 +292,46 @@ module Sequence =
                 | Some be -> be :: sv
                 | _ -> sv
         {inseq with intvalues=sve}
-        
 
-        
+    let windowHopping (h:HoppingWindowing<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b> list) = 
+        failwith "not implemented"
+
+    let windowSliding (s:IntervalSize<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b> list) = 
+        failwith "not implemented"
+
+    let window (w:Windowing<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b> list) =    
+        match w with
+        | Single _ -> [inseq]
+        | Sliding s -> windowSliding s inseq
+        | Hopping h -> windowHopping h inseq
+
+    // let length (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+    //     let noextrap = removeExtrapolation inseq.intvalues
+    //     let lenval = match noextrap with
+    //     | [] -> []
+    //     | h :: t -> //TODO pull out
+    //         let first = List.head noextrap
+    //         let last = List.last noextrap
+    //         let sbound = first.``start``.position
+    //         let ebound = last.``end``.position
+    //         let diff = ebound - sbound
+    //         [FiniteIntervalValue {start={position=sbound;value=diff};``end``={position=ebound;value=diff}}]
+    //     {id=inseq.id;extrap=ExtrapolationStrategy.NoExtrapolation;interp=TODO;intvalues=lenval}  
+
+    // let aggregateAll (op:AggregationOperation) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+    //     match op with
+    //     | NoOp -> inseq
+    //     | Custom c -> failwith "not implemented"
+    //     | Integral -> integrate inseq
+    //     | Avg -> average inseq
+    //     | Max -> maximum inseq
+    //     | Min -> minimum inseq
+    //     | Std -> stdev inseq
+    //     | Range -> valuerange inseq
+
+    // let aggregate (a:Aggregate<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+    //     let wins = window a.windowing inseq
+    //     let aggs = List.map (fun win -> aggregateAll a.operation win) wins
+    //     let vals = List.collect (fun s -> s.intvalues) aggs
+    //     {inseq with intvalues=vals}
+

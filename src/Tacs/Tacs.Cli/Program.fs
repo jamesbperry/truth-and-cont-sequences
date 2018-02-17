@@ -22,12 +22,6 @@ let getEnvironmentCommandLineArgs () =
     | [||] -> [||]
     | args -> args.[1..]
 
-let devTests _ = 
-    let vals = [{position=1;value=1};{position=2;value=2};{position=3;value=3};{position=4;value=4}]
-    let ptseq = {id="42";interp=Linear;extrap=ExtrapolationStrategy.BeforeAndAfter;ptvalues=vals}
-    let intseq = remodel ptseq
-    printfn "%s" <| intseq.ToString()
-
 let rec getArgsInteractive args =
     match System.Console.ReadLine() with
     | "" -> List.rev args
@@ -35,9 +29,6 @@ let rec getArgsInteractive args =
 
 [<EntryPoint>]
 let main argv =
-
-    //testing
-    //devTests()
 
     let parser = ArgumentParser.Create<TacsArgs>(programName = "tacs")
 
