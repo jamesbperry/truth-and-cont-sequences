@@ -1,3 +1,5 @@
+<img src="img/tacs-short.svg" width="200">
+
 # Tacs — Truth and Cont. Sequences
 
 **Tacs** is an open source library for interpreting and analyzing **continuous sequences** of data. It treats continuous data as *signals,* not *samples* by observing some necessary semantics. This gives us a far more appropriate means of reasoning over data like IoT sensor readings, and means our conclusions are likely to be much more accurate.
