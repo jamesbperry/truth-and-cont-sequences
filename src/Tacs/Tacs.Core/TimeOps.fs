@@ -12,12 +12,17 @@ module TimeOps =
         ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
     let InterpolatePosition (iv:FiniteIntervalValue<DateTimeOffset,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        PositionScale iv.start iv.``end`` p
 
-    let InterpolateValueLinear (iv:FiniteIntervalValue<'p,DateTimeOffset>) (scale:float) =
-        let dv = iv.``end``.value.Subtract iv.start.value
-        let f = TimeSpan.FromTicks <| int64 (float dv.Ticks * scale)
-        iv.start.value + f
+    let InterpolateValueConstant (v:DateTimeOffset) (npos:NormalizedPosition)  =
+        v //TODO clamp to None if position is out of bounds
+        
+    let InterpolateValueLinear (bounds:DateTimeOffset * DateTimeOffset) (npos:NormalizedPosition) =
+        let (vi, vf) = bounds
+        let dv = vf.Subtract vi
+        let (NormalizedPosition nposu) = npos
+        let f = TimeSpan.FromTicks <| int64 (float dv.Ticks * nposu)
+        vi + f
 
     //Integer
     let Integrate (inseq:IntervalValue<'a,DateTimeOffset> seq) : (IntervalValue<'a,DateTimeOffset>) =

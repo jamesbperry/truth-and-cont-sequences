@@ -11,28 +11,17 @@ module IntegerOps =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
     let InterpolatePosition (iv:FiniteIntervalValue<int,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        PositionScale iv.start iv.``end`` p
 
-    let InterpolateValueLinear (iv:FiniteIntervalValue<'p,int>) (scale:float) =
-        let dv = iv.``end``.value-iv.start.value
-        let f = int (float dv * scale)
-        iv.start.value + f
+    let InterpolateValueConstant (v:int) (npos:NormalizedPosition) : int =
+        v
 
-    let Interpolate (strat:InterpolationStrategy) (pScaler) (iv:FiniteIntervalValue<'p,int>) (pos:'p) : PointValue<'p,int> =
-        let interpLin (v:FiniteIntervalValue<'p,int>) p : PointValue<'p,int> =
-            let dv = v.``end``.value-v.start.value
-            let s = pScaler v.start.position v.``end``.position p
-            let f = int (float dv * s)
-            {position=pos;value=(v.start.value + f)}
-
-        let applyStrategy s (v:FiniteIntervalValue<'p,int>) (p:'p) =
-            let vi = 
-                match s with
-                | Step -> v.start
-                | Linear -> interpLin v p
-            vi
-
-        applyStrategy strat iv pos
+    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) =
+        let (pti, ptf) = pts
+        let dv = ptf.value - pti.value
+        let npos = pinterp pti.position ptf.position p
+        let f = int (float dv * npos)
+        pti.value + f
 
     //Integer
     let Integral (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =

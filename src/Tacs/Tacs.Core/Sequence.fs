@@ -4,92 +4,143 @@ module Sequence =
 
     open Types
 
-    type PointSequence<'p, 'v> = { id:string; interp:(FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>); extrap:ExtrapolationStrategy; ptvalues:PointValue<'p,'v> list }
+    type PointSequence<'p, 'v> = { id:string; ptvalues:PointValue<'p,'v> list; extrap:ExtrapolationStrategy}
 
-    type IntervalSequence<'p, 'v> = { id:string; interp:(FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>); extrap:ExtrapolationStrategy; intvalues:IntervalValue<'p,'v> list } //TODO remove extrap val as redundant(?)
+    type IntervalSequence<'p, 'v> = { id:string; intvalues:IntervalValue<'p,'v> list }
 
-    let remodelToIntervals (ptseq:PointSequence<'a,'b>) : IntervalSequence<'a,'b> =
+    let instantaneousInterval pos v =
+        InstantaneousIntervalValue {instant=pos;value=fun _->v} //TODO clamp value to normalized
+    
+    let pointPairToInterval<'p,'v> (interp:(PointValue<'p,'v>*PointValue<'p,'v>)->'p->'v) ptpair : IntervalValue<'p,'v> =
+            let (sp:PointValue<'p, 'v>, ep:PointValue<'p,'v>) = ptpair
+            let iv = interp ptpair
+            FiniteIntervalValue {start=sp.position;``end``=ep.position; value=iv}
 
-        let pairFolder v state =
-            match state with
-                | [] -> (v, Option<PointValue<'a,'b>>.None) :: state //will be discarded
-                | (h ,None) :: tail -> (v,h ) :: tail //discards the above
-                | (h,_) :: _ -> (v, h) :: state
+    let forwardRayConstantValueFunc<'v> pstart v p =
+        if p >= pstart then v else failwith "Undefined"
 
-        let ptPairs = Seq.foldBack pairFolder (ptseq.ptvalues |> Seq.map Some) []
+    let backwardRayConstantValueFunc<'v> pend v p =    
+        if p <= pend then v else failwith "Undefined"
 
-        let toIntervals (ps,pe) =
-            match (ps, pe) with
-            | (Some is, Some pev) -> 
-                let ie = ptseq.interp {start=is; ``end``=pev} pev.position
-                FiniteIntervalValue {start=is; ``end``=ie}
-            | (Some is, None) -> ForwardRayIntervalValue {start=is}
-            | (None, Some ie) -> BackwardRayIntervalValue {``end``=ie}
-            | _ -> failwithf "Invalid interval with no start or end"
+    let extrapolateTo (extrap:ExtrapolationStrategy) (int:IntervalValue<'a,'b>) =
+        match extrap with
+        | ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.BeforeAndAfter -> 
+            match int with
+            | FiniteIntervalValue fiv -> 
+                let v = fiv.value fiv.start
+                let rayval = backwardRayConstantValueFunc fiv.start v
+                Some (BackwardRayIntervalValue {``end``=fiv.start;value=rayval})
+            | InstantaneousIntervalValue iiv -> 
+                let rayval = backwardRayConstantValueFunc iiv.instant <| iiv.value iiv.instant
+                Some (BackwardRayIntervalValue {``end``=iiv.instant;value=rayval}) //TODO potential for problems here... reusing the value function!
+            | _ -> None //TODO: handling/sanitizing a sequence with no nonzero-length intervals
 
-        let intervals = List.map toIntervals ptPairs
+        | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.NoExtrapolation -> None
+        | _ -> failwith "Behavior undefined for extrapolation strategy"
 
-        let withPreExtrap (ints:IntervalValue<'a,'b> list) =
-            match ints with
-            | (FiniteIntervalValue head) :: _ -> BackwardRayIntervalValue { ``end``=head.start } :: ints
-            | _ -> ints
+    let extrapolateFrom (extrap:ExtrapolationStrategy) (int:IntervalValue<'a,'b>) =
+        match extrap with
+        | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.BeforeAndAfter -> 
+            match int with
+            | FiniteIntervalValue fiv -> 
+                let v = fiv.value fiv.``end``
+                let rayval = forwardRayConstantValueFunc fiv.``end`` v
+                Some (ForwardRayIntervalValue {start=fiv.``end``;value=rayval})
+            | InstantaneousIntervalValue iiv -> 
+                let rayval = forwardRayConstantValueFunc iiv.instant <| iiv.value iiv.instant
+                Some (ForwardRayIntervalValue {start=iiv.instant;value=rayval})
+            | _ -> None
+        | ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.NoExtrapolation -> None
+        | _ -> failwith "Behavior undefined for extrapolation strategy"
 
-        //if "after" extrap, append open event. This whole method reeks... rewrite!
-        let withPostExtrap (ints:IntervalValue<'a,'b> list) =
-            let last = ints |> List.last //eww
+    let applyExtrapolation (extrap:ExtrapolationStrategy) (intseq:IntervalValue<'p,'v> list) : IntervalValue<'p,'v> list  =
+        let head = List.head intseq
+        let bef = extrapolateTo extrap head
+        let beffolder s ray = 
+            match s with
+            | InstantaneousIntervalValue _ :: t -> ray :: t
+            | _ -> ray :: s
+        let withbef = bef |> Option.fold beffolder intseq
+        let aftfolder s ray =
+            let last = Seq.tryLast withbef
             match last with
-            | FiniteIntervalValue lastf -> [ForwardRayIntervalValue { start = lastf.``end``}] |> List.append ints //eww
-            | _ -> ints
+            | Some (InstantaneousIntervalValue _) -> 
+                let trunc = List.truncate (intseq.Length - 1) intseq //remove last. cringe.
+                List.append trunc [ray]
+            | _ -> List.append s [ray]
+        let aft = extrapolateFrom extrap <| List.last intseq //ouch
+        aft |> Option.fold aftfolder withbef |> List.ofSeq
 
-        let intervalsExtrap =
-            match ptseq.extrap with
-            | ExtrapolationStrategy.BeforeFirst -> intervals |> withPreExtrap
-            | ExtrapolationStrategy.AfterLast -> intervals |> withPostExtrap
-            | ExtrapolationStrategy.BeforeAndAfter -> intervals |> withPreExtrap |> withPostExtrap
-            | _ -> intervals
+    let remodelPairwiseToIntervals<'p,'v> (interp:(PointValue<'p,'v>*PointValue<'p,'v>)->'p->'v) (ptseq:PointSequence<'p,'v>) : IntervalSequence<'p,'v> =
+        let ptPairs = Seq.pairwise ptseq.ptvalues 
+        let ptsToInterval ptpair = pointPairToInterval interp ptpair
+        let lastPt = List.last ptseq.ptvalues
+        let lastInt = instantaneousInterval lastPt.position <| lastPt.value
+        let intervals = Seq.map ptsToInterval ptPairs |> Seq.append <| [lastInt] |> List.ofSeq
+        {id=ptseq.id; intvalues=intervals}
 
-        {id=ptseq.id; interp=ptseq.interp; extrap=ptseq.extrap; intvalues=intervalsExtrap}
+    let remodelToLinearIntervals (interp:PointValue<'p,'v>*PointValue<'p,'v>->'p->'v) (ptseq:PointSequence<'p,'v>) : IntervalSequence<'p,'v>  =
+        let ints = remodelPairwiseToIntervals interp ptseq
+        let intsextrap = applyExtrapolation ptseq.extrap ints.intvalues 
+        { ints with intvalues = intsextrap }
+
+    let remodelToConstantIntervals (interp:PointValue<'p,'v>->'p->'v) (ptseq:PointSequence<'p,'v>) : IntervalSequence<'p,'v> = //TODO exorcise the 'v as obj mess
+        let interpwrap (boundvals:PointValue<'p,'v> * PointValue<'p,'v>) =
+            let (s, _) = boundvals
+            interp s
+        let ints = remodelPairwiseToIntervals interpwrap ptseq
+        let intsextrap = applyExtrapolation ptseq.extrap ints.intvalues 
+        { ints with intvalues = intsextrap }
 
     let remodelToPoints (ancType:RemodelAnchor) (inseq:IntervalSequence<'a,'b>) : PointSequence<'a,'b> =
 
-        let pointMapper (anct:RemodelAnchor) (extrap:ExtrapolationStrategy) (intv:IntervalValue<'a,'b>) =
+        let pointMapper (anct:RemodelAnchor) (intv:IntervalValue<'a,'b>) : PointValue<'a,'b> option =
             match intv with
             | FiniteIntervalValue fiv ->
                 match anct with
-                | IntervalStart -> Some {position=fiv.start.position;value=fiv.start.value}
-                | IntervalEnd -> Some {position=fiv.``end``.position;value=fiv.start.value}
+                | IntervalStart -> Some {position=fiv.start;value=(fiv.value fiv.start)}
+                | IntervalEnd -> Some {position=fiv.``end``;value=fiv.value fiv.``end``}
             | ForwardRayIntervalValue friv ->
-                match (anct, extrap) with
-                | (IntervalStart, (ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.BeforeAndAfter)) -> 
-                    Some {position=friv.start.position;value=friv.start.value}
+                match anct with
+                | IntervalStart -> Some {position=friv.start;value=friv.value friv.start}
                 | _ -> None
             | BackwardRayIntervalValue briv ->
-                match (anct, extrap) with
-                | (IntervalEnd, (ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.BeforeAndAfter)) -> 
-                    Some {position=briv.``end``.position;value=briv.``end``.value}
-                | _ -> None                
+                match anct with
+                | IntervalEnd -> Some {position=briv.``end``;value=briv.value briv.``end``}
+                | _ -> None
+            | InstantaneousIntervalValue iiv -> Some {position=iiv.instant;value=iiv.value iiv.instant}                     
 
-        //TODO optionally set ptseq extrapolation based on unbounded start/end intervals ?
+        let hasfray =  Seq.exists (fun i -> match i with | ForwardRayIntervalValue _ -> true; | _ -> false) inseq.intvalues
+        let hasbray = Seq.exists (fun i -> match i with | BackwardRayIntervalValue _ -> true; | _ -> false) inseq.intvalues
+        let extrap = 
+            match (hasfray, hasbray) with
+            | (true, true) -> ExtrapolationStrategy.BeforeAndAfter
+            | (true, false) -> ExtrapolationStrategy.BeforeFirst
+            | (false, true) -> ExtrapolationStrategy.AfterLast
+            | _ -> ExtrapolationStrategy.NoExtrapolation
 
-        let ptvals = List.choose id <| List.map (pointMapper ancType inseq.extrap) inseq.intvalues
+        let ptvals = List.choose id <| List.map (pointMapper ancType) inseq.intvalues
+        {id=inseq.id;extrap=extrap;ptvalues=ptvals}    
 
-        {id=inseq.id;extrap=inseq.extrap;interp=inseq.interp;ptvalues=ptvals}    
-    let intervalEndsBefore (pos:'a) (int:IntervalValue<'a,'b>) =
-        match int with
-            | FiniteIntervalValue fiv -> fiv.``end``.position <= pos
-            | BackwardRayIntervalValue briv -> briv.``end``.position <= pos
+    let intervalEndsBefore (pos:'a) (intv:IntervalValue<'a,'b>) =
+        match intv with
+            | FiniteIntervalValue fiv -> fiv.``end`` <= pos
+            | BackwardRayIntervalValue briv -> briv.``end`` <= pos
+            | InstantaneousIntervalValue iiv -> iiv.instant <= pos
             | ForwardRayIntervalValue _ -> false
-    let intervalStartsAfter (pos:'a) (int:IntervalValue<'a,'b>) =
-        match int with
-            | FiniteIntervalValue fiv -> fiv.start.position > pos
+    let intervalStartsAfter (pos:'a) (intv:IntervalValue<'a,'b>) =
+        match intv with
+            | FiniteIntervalValue fiv -> fiv.start > pos
             | BackwardRayIntervalValue _ -> false
-            | ForwardRayIntervalValue friv -> friv.start.position > pos
+            | ForwardRayIntervalValue friv -> friv.start > pos
+            | InstantaneousIntervalValue iiv -> iiv.instant > pos
 
-    let intervalContains (pos:'a) (int:IntervalValue<'a,'b>)  =
-        match int with
-            | FiniteIntervalValue fiv -> (fiv.start.position <= pos) && (fiv.``end``.position > pos)
-            | BackwardRayIntervalValue briv -> briv.``end``.position > pos
-            | ForwardRayIntervalValue friv -> friv.start.position <= pos
+    let intervalContains (pos:'a) (intv:IntervalValue<'a,'b>)  =
+        match intv with
+            | FiniteIntervalValue fiv -> (fiv.start <= pos) && (fiv.``end`` > pos)
+            | BackwardRayIntervalValue briv -> briv.``end`` > pos
+            | ForwardRayIntervalValue friv -> friv.start <= pos
+            | InstantaneousIntervalValue iiv -> not <| (iiv.instant > pos || iiv.instant < pos) //avoiding == because of compiler constraints
 
     let intervalOptContains (pos:'a) (intop:IntervalValue<'a,'b> option) =
             match intop with
@@ -103,140 +154,93 @@ module Sequence =
             | (FiniteIntervalValue h) :: t -> if intervalStartsAfter pos (FiniteIntervalValue h) then prev else atOrBefore pos t (Some (FiniteIntervalValue h))
             | (BackwardRayIntervalValue h) :: t -> atOrBefore pos t (Some (BackwardRayIntervalValue h))
             | [(ForwardRayIntervalValue h)] -> if intervalStartsAfter pos (ForwardRayIntervalValue h)  then None else (Some (ForwardRayIntervalValue h))
+            | (InstantaneousIntervalValue iiv) :: t -> if intervalStartsAfter pos (InstantaneousIntervalValue iiv) then prev else atOrBefore pos t (Some (InstantaneousIntervalValue iiv))
             | _ :: t -> atOrBefore pos t prev
         atOrBefore pos vals None        
 
-    let getNearestPointInInterval (interp) (int:IntervalValue<'a,'b> option) (pos:'a) : PointValue<'a,'b> option =
-        match int with
-        | Some (FiniteIntervalValue fiv) -> Some (interp fiv pos)
-        | Some (ForwardRayIntervalValue friv) -> Some {position=pos;value=friv.start.value}
-        | Some (BackwardRayIntervalValue briv) -> Some {position=pos;value=briv.``end``.value}
+    let getNearestPointInInterval (intv:IntervalValue<'a,'b> option) (pos:'a) : PointValue<'a,'b> option = //TODO this should clamp (?). Also, remove redundacy.
+        match intv with //Hmmm... this implies a defined behavior for values interpolated outside bounds. No bueno.
+        | Some (FiniteIntervalValue fiv) -> Some {position=pos;value=fiv.value pos}
+        | Some (InstantaneousIntervalValue iiv) -> Some {position=pos;value=iiv.value pos}
+        | Some (ForwardRayIntervalValue friv) -> Some {position=pos;value=friv.value pos}
+        | Some (BackwardRayIntervalValue briv) -> Some {position=pos;value=briv.value pos}
         | None -> None
     
-    let getExactPointInInterval (interp) (intop:IntervalValue<'a,'b> option) (pos:'a) : PointValue<'a,'b> option =
+    let getExactPointInInterval (intop:IntervalValue<'a,'b> option) (pos:'a) : PointValue<'a,'b> option =
         let cont = intervalOptContains pos intop
         match cont with
-        | true -> getNearestPointInInterval interp intop pos
+        | true -> getNearestPointInInterval intop pos
         | false -> None
 
     let getPointInSequence (inseq:IntervalSequence<'a,'b>) (pos:'a) =
         let prev = getIntervalAtOrBefore inseq.intvalues pos
-        getExactPointInInterval inseq.interp prev pos
+        getExactPointInInterval prev pos
 
     let SomeNonzeroLength (int:IntervalValue<'a,'b>) =
-        let isNonzeroLength (fiv:FiniteIntervalValue<'a,'b>) = fiv.start.position <> fiv.``end``.position
+        let isNonzeroLength (fiv:FiniteIntervalValue<'a,'b>) = fiv.start <> fiv.``end``
         match int with
         | FiniteIntervalValue fiv -> if (isNonzeroLength fiv) then Some int else None
         | _ -> Some int //not finite so cannot be zero length
 
-    let splitInterval (interp) (intop:IntervalValue<'a,'b> option) (pos:'a) =
-        let endpto = getNearestPointInInterval interp intop pos
-        let trim int endpt =  
+    let splitInterval (intop:IntervalValue<'a,'b> option) (pos:'a) =
+        let endpto = getNearestPointInInterval intop pos
+        let trim int (endpt:PointValue<'a,'b>) =  
             match int with
             | BackwardRayIntervalValue briv -> 
-                {before=Some <| BackwardRayIntervalValue {``end``=endpt};after=SomeNonzeroLength <| FiniteIntervalValue {start=endpt;``end``=briv.``end``}}
+                {before=Some <| BackwardRayIntervalValue {``end``=endpt.position;value=briv.value};after=SomeNonzeroLength <| FiniteIntervalValue {start=endpt.position;``end``=briv.``end``;value=briv.value}}
             | FiniteIntervalValue fiv -> 
-                {before=SomeNonzeroLength <| FiniteIntervalValue {start=fiv.start;``end``=endpt};after=SomeNonzeroLength <| FiniteIntervalValue {start=endpt;``end``=fiv.``end``}}
+                {before=SomeNonzeroLength <| FiniteIntervalValue {start=fiv.start;``end``=endpt.position;value=fiv.value};after=SomeNonzeroLength <| FiniteIntervalValue {start=endpt.position;``end``=fiv.``end``;value=fiv.value}}
             | ForwardRayIntervalValue friv -> 
-                {before=SomeNonzeroLength <| FiniteIntervalValue {start=friv.start;``end``=endpt};after=Some <| ForwardRayIntervalValue {start=endpt}}           
+                {before=SomeNonzeroLength <| FiniteIntervalValue {start=friv.start;``end``=endpt.position;value=friv.value};after=Some <| ForwardRayIntervalValue {start=endpt.position;value=friv.value}}
+            | InstantaneousIntervalValue _ -> {before=Some int;after=Some int}
+
         let trimopt = Option.map2 trim
         Option.defaultValue {before=None;after=None} <| trimopt intop endpto       
 
-    let trimIntervalTo (interp) (intop:IntervalValue<'a,'b> option) (pos:'a) =
-        let split = splitInterval interp intop pos
+    let trimIntervalTo (intop:IntervalValue<'a,'b> option) (pos:'a) =
+        let split = splitInterval intop pos
         split.before
 
-    let trimIntervalFrom (interp) (intop:IntervalValue<'a,'b> option) (pos:'a) =
-        let split = splitInterval interp intop pos
+    let trimIntervalFrom (intop:IntervalValue<'a,'b> option) (pos:'a) =
+        let split = splitInterval intop pos
         split.after
 
-    let extrapolateTo (extrap:ExtrapolationStrategy) (int:IntervalValue<'a,'b>) =
-        match extrap with
-        | ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.BeforeAndAfter -> 
-            match int with
-            | BackwardRayIntervalValue _ -> None
-            | FiniteIntervalValue fiv -> Some (BackwardRayIntervalValue {``end``=fiv.start})
-            | ForwardRayIntervalValue _ -> None //TODO: handling/sanitizing a sequence with no nonzero-length intervals
-        | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.NoExtrapolation -> None
-        | _ -> failwith "Behavior undefined for extrapolation strategy"
-
-    let extrapolateFrom (extrap:ExtrapolationStrategy) (int:IntervalValue<'a,'b>) =
-        match extrap with
-        | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.BeforeAndAfter -> 
-            match int with
-            | BackwardRayIntervalValue _ -> None
-            | FiniteIntervalValue fiv -> Some (ForwardRayIntervalValue {start=fiv.``end``})
-            | ForwardRayIntervalValue _ -> None //TODO: handling/sanitizing a sequence with no nonzero-length intervals
-        | ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.NoExtrapolation -> None
-        | _ -> failwith "Behavior undefined for extrapolation strategy"
-
-    let extrapolateListFrom extrap int = 
-        let efn = Option.bind <| extrapolateFrom extrap
-        let ei = efn int
-        match ei with
-        | Some e -> [e]
-        | None -> []
-
-    let removeExtrapolation (invals:IntervalValue<'a,'b> list) : (FiniteIntervalValue<'a,'b> list) =
-        let tryFinite iv =
-            match iv with
-            | FiniteIntervalValue fiv -> Some fiv
-            | _ -> None
-        List.choose tryFinite invals
-
     let getIntervalsAtAndAfter  (inseq:IntervalSequence<'a,'b>) (strat:BoundaryStrategy) (pos:'a) =
-        let rec trimmer (p:'a) (rem:IntervalValue<'a,'b> list) =
-            match rem with
-            | [] -> []
-            | ForwardRayIntervalValue _ :: _ -> rem
-            | iv :: t -> if (intervalContains p iv) then rem else (trimmer p t)
-        let trimmed = trimmer pos inseq.intvalues
-        let withfirst = 
-            match (trimmed, strat) with                     
-                | ([],_) -> []
-                | (h::t,Interpolated) -> 
-                    let trimop = trimIntervalFrom inseq.interp (Some h) pos
-                    match trimop with
-                    | Some trim -> trim :: t
-                    | None -> t
-                | (_::t,Inside) -> t    
-                | (h::t,Intersected) -> h::t
-        match withfirst with
-            | [] -> withfirst
-            | (h::t) -> 
-                let extrap = extrapolateTo inseq.extrap h
-                match extrap with
-                | Some ei -> ei::withfirst
-                | None -> withfirst              
+        let skipper (intval:IntervalValue<'a,'b>) = intervalEndsBefore pos intval
+        let skipped = Seq.skipWhile skipper inseq.intvalues
+        let bounded =
+             match strat with
+                | Inside -> Seq.skip 1 skipped
+                | Intersected -> skipped
+                | Interpolated -> 
+                    let head = Seq.head skipped
+                    match (intervalContains pos <| head) with
+                    | true -> 
+                        let split = splitInterval (Some head) pos
+                        match (split.after) with
+                        | Some sint -> Seq.append [sint] skipped
+                        | None -> skipped
+                    | false -> skipped                
+        List.ofSeq bounded
 
     let getIntervalsAtAndBefore (inseq:IntervalSequence<'a,'b>) (strat:BoundaryStrategy) (pos:'a) = 
-        let extrap = extrapolateListFrom inseq.extrap
-        let rec fslicer p (rem:IntervalValue<'a,'b> list) (prev:IntervalValue<'a,'b> option) =
-            seq {
-                match rem with
-                | [] -> 
-                    yield! extrap prev
-                | (h::t) -> match (intervalContains p h) with 
-                                | false ->
-                                    yield h 
-                                    yield! fslicer p t (Some h) 
-                                | true ->
-                                    match strat with
-                                    | Interpolated -> 
-                                        let trimop = trimIntervalTo inseq.interp (Some h) pos
-                                        match trimop with
-                                        | Some trim -> 
-                                            yield trim
-                                            yield! extrap trimop
-                                        | None ->
-                                            yield! extrap prev
-                                    | Inside ->
-                                        yield! extrap prev
-                                    | Intersected -> 
-                                        yield h
-                                        yield! extrap (Some h)
-            }        
-        List.ofSeq <| fslicer pos inseq.intvalues None
+        match strat with
+            | Inside -> List.takeWhile (fun v -> intervalEndsBefore pos v) inseq.intvalues
+            | Intersected -> List.takeWhile(fun v -> not <| intervalStartsAfter pos v) inseq.intvalues
+            | Interpolated -> 
+                let wintersect = List.takeWhile(fun v -> not <| intervalStartsAfter pos v) inseq.intvalues
+                let rwintersect = List.rev wintersect
+                match rwintersect with
+                | (h::t) ->
+                    match (intervalContains pos h) with
+                    | true -> 
+                        let split = splitInterval (Some h) pos
+                        match (split.after) with
+                        | Some sint -> sint :: t
+                        | None -> t
+                    | false -> t     
+                | [] -> []                           
+
 
     let sliceByInterval (s:IntervalSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
         let strim = 
@@ -251,47 +255,18 @@ module Sequence =
 
     let sliceForwardByCount (s:ForwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
         let strim = getIntervalsAtAndAfter inseq s.start.strategy s.start.location
-        let extrap = extrapolateListFrom inseq.extrap
-        let rec getcount ints prev n j =
-            seq {
-                match ints with
-                | [] -> yield! extrap prev
-                | (h::t) ->
-                    let jprime =
-                        match h with
-                        | FiniteIntervalValue _ -> j + 1
-                        | _ -> j
-                    if (jprime <= n) then
-                        yield h
-                        yield! getcount t (Some h) n jprime
-                    else
-                        yield! extrap prev                     
-            }        
-        let ctrim = List.ofSeq <| getcount strim None s.count 0
-
+        let ctrim = List.truncate s.count strim
         {inseq with intvalues=ctrim}
 
+    let takeLast n seq =  //cringe
+        let rev = Seq.rev seq
+        let trim = Seq.take n rev
+        Seq.rev trim |> List.ofSeq
+
     let sliceBackwardByCount (s:BackwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
-        let fiSlice = {IntervalSlice.start=None;IntervalSlice.``end``=Some s.``end``}
-        let trimseq = sliceByInterval fiSlice inseq
-        let tvr = List.rev trimseq.intvalues
-        let count =
-            let rc = 
-                match inseq.extrap with
-                | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.BeforeAndAfter -> s.count + 1
-                | _ -> s.count
-            System.Math.Min (tvr.Length, rc)
-        let svr = List.take count tvr
-        let sv = List.rev svr
-        let sve =
-            match sv with
-            | [] -> []
-            | (h::t) -> 
-                let beo = extrapolateTo inseq.extrap h
-                match beo with
-                | Some be -> be :: sv
-                | _ -> sv
-        {inseq with intvalues=sve}
+        let strim = getIntervalsAtAndBefore inseq s.``end``.strategy s.``end``.location
+        let ctrim = takeLast s.count strim
+        {inseq with intvalues=ctrim}
 
     let windowHopping (h:HoppingWindowing<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b> list) = 
         failwith "not implemented"
@@ -313,7 +288,7 @@ module Sequence =
     //         let first = List.head noextrap
     //         let last = List.last noextrap
     //         let sbound = first.``start``.position
-    //         let ebound = last.``end``.position
+    //         let ebound = last.``end``
     //         let diff = ebound - sbound
     //         [FiniteIntervalValue {start={position=sbound;value=diff};``end``={position=ebound;value=diff}}]
     //     {id=inseq.id;extrap=ExtrapolationStrategy.NoExtrapolation;interp=TODO;intvalues=lenval}  

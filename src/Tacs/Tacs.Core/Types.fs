@@ -87,21 +87,40 @@ module Types =
         | AfterLast = 2
         | BeforeAndAfter = 3   
 
-    type PointValue<'a, 'b> =  { position:'a; value:'b }
+    type PointValue<'p,'v> =  { position:'p; value:'v }
 
-    type FiniteIntervalValue<'a,'b> = { start:PointValue<'a,'b>; ``end``:PointValue<'a,'b>; }
-    type ForwardRayIntervalValue<'a,'b> = { start:PointValue<'a,'b>;  }  //Intervals can be open to represent extrapolation
-    type BackwardRayIntervalValue<'a,'b> = { ``end``:PointValue<'a,'b> }
+    type NormalizedPosition = 
+        | NormalizedPosition of float
+        static member Start = NormalizedPosition 0.0
+        static member End = NormalizedPosition 1.0
+
+    type FiniteIntervalValue<'p,'v> = { start:'p; ``end``:'p; value:'p->'v}
+    type ForwardRayIntervalValue<'p,'v> = { start:'p; value:'p->'v}
+    type BackwardRayIntervalValue<'p,'v> = { ``end``:'p; value:'p->'v}
+    type InstantaneousIntervalValue<'p,'v> = { instant:'p; value:'p->'v}
 
     type IntervalValue<'a,'b> =
         | FiniteIntervalValue of FiniteIntervalValue<'a,'b>
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
+        | InstantaneousIntervalValue of InstantaneousIntervalValue<'a,'b>
 
-    type SplitIntervalValue<'a,'b> = {before:IntervalValue<'a,'b> option;after:IntervalValue<'a,'b> option}  
+    type SplitIntervalValue<'p,'v> = {before:IntervalValue<'p,'v> option;after:IntervalValue<'p,'v> option}  
     
-    type InterpolationFunction<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v> option
+    type InterpolationFunction<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>
     type AggregationFunction<'p,'v> = IntervalValue<'p,'v> seq -> IntervalValue<'p,'v>
+
+
+    type Quality = Quality of string //placeholder
+    type QualitiedValue<'v> = 'v * Quality list
+
+    // type Angle = Angle of float
+    // type Weight = Weight of float
+    // type SplinePoint<'v> = 'v * Angle * Weight
+    // type SplinedValue<'v> = SplinePoint<'v> * SplinePoint<'v> //note: not a LinearValue<SplinePoint<'v>> bc diff. interpretation strategy
+
+    type PositionInterpolator<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> float
+    type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
 
     //TODO move this...
     let Interpolate (pinterp) (vinterp) (iv:FiniteIntervalValue<'p,'v>) (p:'p) : PointValue<'p,'v> =
@@ -109,8 +128,8 @@ module Types =
         let v = vinterp iv s
         {position=p;value=v}    
 
-    let InterpolateValuePositiveStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-        iv.start.value
+    // let InterpolateValuePositiveStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
+    //     iv.start.value
  
-    let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-        iv.``end``.value  
+    // let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
+    //     iv.``end``.value

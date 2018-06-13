@@ -9,9 +9,9 @@ open Tacs.Core
 [<Test>]
 let ``points to intervals should be reversible`` () =
     let ptvals = [{position=1;value=1};{position=2;value=2};{position=3;value=3};{position=4;value=4}]
-    let vstrat = Interpolate IntegerOps.InterpolatePosition IntegerOps.InterpolateValueLinear 
-    let ptseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;interp=vstrat;ptvalues=ptvals}
-    let intseq = remodelToIntervals ptseq
+    let ptseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;ptvalues=ptvals}
+    let interp = IntegerOps.InterpolateValueLinear IntegerOps.PositionScale
+    let intseq = remodelToLinearIntervals interp ptseq
     let ptseq2 = remodelToPoints RemodelAnchor.IntervalStart intseq
     ptseq2.ptvalues |> should equal ptseq.ptvalues
 

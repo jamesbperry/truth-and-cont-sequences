@@ -11,12 +11,15 @@ module FloatOps =
         ClampScale <| (at - low)/(high - low)           
 
     let InterpolatePosition (iv:FiniteIntervalValue<float,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        PositionScale iv.start iv.``end`` p
 
-    let InterpolateValueLinear (iv:FiniteIntervalValue<'p,float>) (scale:float) =
-        let dv = iv.``end``.value-iv.start.value
-        let f = (dv * scale)
-        iv.start.value + f
+    let InterpolateValueConstant (v:float) (npos:NormalizedPosition) =
+        v
+    let InterpolateValueLinear (vals:float * float) (npos:NormalizedPosition) =
+        let (vi, vf) = vals
+        let dv = vf - vi
+        let (NormalizedPosition nposu) = npos
+        vi + (dv * nposu)
 
     let Integral (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
         failwith "not implemented"
