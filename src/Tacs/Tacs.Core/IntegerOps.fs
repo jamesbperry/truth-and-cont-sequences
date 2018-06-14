@@ -11,12 +11,12 @@ module IntegerOps =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
     let InterpolatePosition (iv:FiniteIntervalValue<int,'v>) p : float =
-        PositionScale iv.start iv.``end`` p
+        PositionScale iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:int) (npos:NormalizedPosition) : int =
         v
 
-    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) =
+    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) = //TODO different strategies: floor, ceil, round
         let (pti, ptf) = pts
         let dv = ptf.value - pti.value
         let npos = pinterp pti.position ptf.position p

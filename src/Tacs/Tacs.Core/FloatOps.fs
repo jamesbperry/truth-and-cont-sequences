@@ -11,10 +11,10 @@ module FloatOps =
         ClampScale <| (at - low)/(high - low)           
 
     let InterpolatePosition (iv:FiniteIntervalValue<float,'v>) p : float =
-        PositionScale iv.start iv.``end`` p
+        PositionScale iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:float) (npos:NormalizedPosition) =
-        v
+        Some v
     let InterpolateValueLinear (vals:float * float) (npos:NormalizedPosition) =
         let (vi, vf) = vals
         let dv = vf - vi

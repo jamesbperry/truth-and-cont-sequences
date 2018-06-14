@@ -2,43 +2,61 @@ namespace Tacs.Core
 
 module Types =
 
-    type BoundaryStrategy = 
-        | Inside
+    // type BoundaryType =
+    //     | Inclusive
+    //     | Exclusive
+
+    //type IntervalBoundary<'p> = { value:'p; nature:BoundaryType }
+
+    type BoundaryStrategy =
+        | InclusiveLow
+        | InclusiveHigh
+
+    type IntervalBoundary<'p> =
+        | Inclusive of 'p
+        | Exclusive of 'p
+        member self.position =
+            match self with
+            | Inclusive i -> i
+            | Exclusive e -> e
+
+    type SliceStrategy = 
+        | Inside //Exclusive
         | Interpolated
-        | Intersected
+        | Intersected //Inclusive
 
     type RemodelAnchor =
         | IntervalStart
         //| IntervalMidpoint //todo
         | IntervalEnd
 
-    type Remodel<'a> =
+    type Remodel =
         | ToPoints
         | ToIntervals
 
-    type Boundary<'a> = { location:'a; strategy:BoundaryStrategy }
+    type SliceBoundary<'p> = { position:'p; strategy:SliceStrategy }
 
-    type IntervalSlice<'a> = { start:Boundary<'a> option; ``end``:Boundary<'a> option; }
-    type ForwardSlice<'a> = { start:Boundary<'a>; count:int; }
-    type BackwardSlice<'a> = {count:int; ``end``:Boundary<'a>; }
+    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; ``end``:SliceBoundary<'p> option; }
+    type ForwardSlice<'p> = { start:SliceBoundary<'p>; count:int; }
+    type BackwardSlice<'p> = {count:int; ``end``:SliceBoundary<'p>; }
 
-    type Slice<'a> = 
-        | IntervalSlice of IntervalSlice<'a>
-        | ForwardSlice of ForwardSlice<'a>
-        | BackwardSlice of BackwardSlice<'a>
+    type Slice<'p> = 
+        | IntervalSlice of IntervalSlice<'p>
+        | ForwardSlice of ForwardSlice<'p>
+        | BackwardSlice of BackwardSlice<'p>
 
-    type IntervalSize<'a> =
-        | Width of 'a
+    type IntervalSize<'dp> = //But can be a different datatype than 'p... e.g. TimeSpan for DateTime
+        | Width of 'dp
         | Count of int
 
-    type HoppingWindowing<'a> = { size:IntervalSize<'a>; hop:IntervalSize<'a> }
+    type HoppingWindowing<'dp> = { size:IntervalSize<'dp>; hop:IntervalSize<'dp> }
 
-    type Windowing<'a> =
+    type Windowing<'dp> =
         | Single
-        | Sliding of IntervalSize<'a>
-        | Hopping of HoppingWindowing<'a>
+        | Sliding of IntervalSize<'dp>
+        | Hopping of HoppingWindowing<'dp>
 
-    type AggregationOperation =
+    type AggregationOperation = //TODO remove. types define their own aggregators!
         | NoOp
         | Custom of string
         | Integral
@@ -48,33 +66,33 @@ module Types =
         | Std
         | Range
 
-    type Aggregate<'a> = { windowing:Windowing<'a>; operation:AggregationOperation; }
+    type Aggregate<'dp> = { windowing:Windowing<'dp>; operation:AggregationOperation; } //TODO rework. Types define their own aggregators!
 
-    type Anchor<'a> =
+    type Anchor<'p> =
         | Start
         | End
-        | Position of 'a
+        | Position of 'p
 
-    type Sample<'a> =
-        | Point of 'a
-        | Points of 'a list
-        | Intervals of IntervalSize<'a> * Anchor<'a>
+    type Sample<'p,'dp> =
+        | Point of 'p
+        | Points of 'p list
+        | Intervals of IntervalSize<'dp> * Anchor<'p>
 
-    type CompressionStrategy =
+    type CompressionStrategy = //Shouldn't types define compression strategy too?
         | None = 0
         | Custom = 1
         | SwingingDoor  = 2
         | LCA = 3
         | Plot = 4
 
-    type Compress<'a> = { strategy:CompressionStrategy; config:string }    
+    type Compress<'a> = { strategy:CompressionStrategy; config:string } //Work out the typing on these
 
-    type Operations<'a> =
-        | Remodel of Remodel<'a>
-        | Slice of Slice<'a>
-        | Aggregate of Aggregate<'a>
-        | Sample of Sample<'a>
-        | Compress of Compress<'a>
+    // type Operations<'p> =
+    //     | Remodel of Remodel
+    //     | Slice of Slice<'p>
+    //     | Aggregate of Aggregate<'a>
+    //     | Sample of Sample<'p,'dp>
+    //     | Compress of Compress<'a>
 
     type InterpolationStrategy =
         | Step
@@ -94,9 +112,9 @@ module Types =
         static member Start = NormalizedPosition 0.0
         static member End = NormalizedPosition 1.0
 
-    type FiniteIntervalValue<'p,'v> = { start:'p; ``end``:'p; value:'p->'v}
-    type ForwardRayIntervalValue<'p,'v> = { start:'p; value:'p->'v}
-    type BackwardRayIntervalValue<'p,'v> = { ``end``:'p; value:'p->'v}
+    type FiniteIntervalValue<'p,'v> = { start:IntervalBoundary<'p>; ``end``:IntervalBoundary<'p>; value:'p->'v}
+    type ForwardRayIntervalValue<'p,'v> = { start:IntervalBoundary<'p>; value:'p->'v}
+    type BackwardRayIntervalValue<'p,'v> = { ``end``:IntervalBoundary<'p>; value:'p->'v}
     type InstantaneousIntervalValue<'p,'v> = { instant:'p; value:'p->'v}
 
     type IntervalValue<'a,'b> =
@@ -109,6 +127,7 @@ module Types =
     
     type InterpolationFunction<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>
     type AggregationFunction<'p,'v> = IntervalValue<'p,'v> seq -> IntervalValue<'p,'v>
+
 
 
     type Quality = Quality of string //placeholder
