@@ -34,10 +34,10 @@ module Sequence =
         | Exclusive e -> Inclusive e
 
     let forwardRayConstantValueFunc<'p,'v when 'p : comparison> (pstart:'p) (v:'v) (p:'p) : 'v =
-        if pstart > p then v else failwith "Undefined"
+        if p >= pstart then v else failwith "Undefined"
 
     let backwardRayConstantValueFunc<'p,'v when 'p : comparison> (pend:'p when 'p : comparison) (v:'v) (p:'p) : 'v =
-        if pend > p then v else failwith "Undefined"
+        if p <= pend then v else failwith "Undefined"
 
     let extrapolateTo (extrap:ExtrapolationStrategy) (int:IntervalValue<'p,'v>) =
         match extrap with
@@ -67,7 +67,7 @@ module Sequence =
                 let rayval = forwardRayConstantValueFunc fiv.``end``.position v
                 Some (ForwardRayIntervalValue {start=raystart;value=rayval})
             | InstantaneousIntervalValue iiv -> 
-                let raystart = Exclusive iiv.instant
+                let raystart = Inclusive iiv.instant
                 let rayval = forwardRayConstantValueFunc iiv.instant <| iiv.value iiv.instant
                 Some (ForwardRayIntervalValue {start=raystart;value=rayval})
             | _ -> None
@@ -86,7 +86,7 @@ module Sequence =
             let last = Seq.tryLast withbef
             match last with
             | Some (InstantaneousIntervalValue _) -> 
-                let trunc = List.truncate (intseq.Length - 1) intseq //remove last. cringe.
+                let trunc = List.truncate (List.length s - 1) s //remove last. cringe.
                 List.append trunc [ray]
             | _ -> List.append s [ray]
         let aft = extrapolateFrom extrap <| List.last intseq //ouch

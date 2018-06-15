@@ -15,6 +15,7 @@ module Types =
     type IntervalBoundary<'p> =
         | Inclusive of 'p
         | Exclusive of 'p
+        //TODO try | PositiveInfinity  and | NegativeInfinity
         member self.position =
             match self with
             | Inclusive i -> i
@@ -105,7 +106,11 @@ module Types =
         | AfterLast = 2
         | BeforeAndAfter = 3   
 
-    type PointValue<'p,'v> =  { position:'p; value:'v }
+    type BoundaryValue<'p,'v> = { position:IntervalBoundary<'p>; value:'v }
+
+    type PointValue<'p,'v> =  { position:'p; value:'v } with
+        static member ofBoundary (bv:BoundaryValue<'p,'v>) =
+            {position=bv.position.position;value=bv.value}
 
     type NormalizedPosition = 
         | NormalizedPosition of float
@@ -122,6 +127,12 @@ module Types =
         | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
         | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
         | InstantaneousIntervalValue of InstantaneousIntervalValue<'a,'b>
+        member self.value =
+            match self with
+            | FiniteIntervalValue fiv -> fiv.value
+            | ForwardRayIntervalValue friv -> friv.value
+            | BackwardRayIntervalValue briv -> briv.value
+            | InstantaneousIntervalValue iiv -> iiv.value
 
     type SplitIntervalValue<'p,'v> = {before:IntervalValue<'p,'v> option;after:IntervalValue<'p,'v> option}  
     

@@ -14,15 +14,23 @@ module TimeOps =
     let InterpolatePosition (iv:FiniteIntervalValue<DateTimeOffset,'v>) p : float =
         PositionScale iv.start.position iv.``end``.position p
 
-    let InterpolateValueConstant (v:DateTimeOffset) (npos:NormalizedPosition)  =
-        v //TODO clamp to None if position is out of bounds
+    let InterpolateValueConstant (v:DateTimeOffset) (p:'p)  =
+        v
         
-    let InterpolateValueLinear (bounds:DateTimeOffset * DateTimeOffset) (npos:NormalizedPosition) =
-        let (vi, vf) = bounds
-        let dv = vf.Subtract vi
-        let (NormalizedPosition nposu) = npos
-        let f = TimeSpan.FromTicks <| int64 (float dv.Ticks * nposu)
-        vi + f
+    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,DateTimeOffset>*PointValue<'p,DateTimeOffset>) (p:'p) =
+        let (pti, ptf) = pts
+        let dv = ptf.value.Subtract pti.value
+        let npos = pinterp pti.position ptf.position p
+        let del = TimeSpan.FromTicks <| int64 (float dv.Ticks * npos)
+        pti.value + del
+
+    let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
+        let interp = InterpolateValueConstant value
+        FiniteIntervalValue {start=startpos;``end``=endpos;value=interp};
+
+    let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,DateTimeOffset>) (endpt:BoundaryValue<'p,DateTimeOffset>) =
+        let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
+        FiniteIntervalValue {start=startpt.position;``end``=endpt.position;value=interp};
 
     //Integer
     let Integrate (inseq:IntervalValue<'a,DateTimeOffset> seq) : (IntervalValue<'a,DateTimeOffset>) =
