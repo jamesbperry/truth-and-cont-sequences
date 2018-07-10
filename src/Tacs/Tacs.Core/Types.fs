@@ -99,12 +99,11 @@ module Types =
         | Step
         | Linear
 
-    [<System.FlagsAttribute>]
     type ExtrapolationStrategy =
-        | NoExtrapolation = 0
-        | BeforeFirst = 1
-        | AfterLast = 2
-        | BeforeAndAfter = 3   
+        | NoExtrapolation
+        | BeforeFirst
+        | AfterLast
+        | BeforeAndAfter 
 
     type BoundaryValue<'p,'v> = { position:IntervalBoundary<'p>; value:'v }
 

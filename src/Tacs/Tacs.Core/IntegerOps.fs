@@ -7,11 +7,11 @@ module IntegerOps =
     let inline ClampScale (v:'a) =
         min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
-    let PositionScale (low:int) (high:int) (at:int) =
+    let IntegerPosition (low:int) (high:int) (at:int) =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
     let InterpolatePosition (iv:FiniteInterval<int,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        IntegerPosition iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:int) (p:'p) : int =
         v
@@ -59,7 +59,18 @@ module IntegerOps =
         {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>    
 
     let LinearCeilingIntValue (pstart,pend) =
-        {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>                     
+        {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>
+
+    let LinearNearestIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
+        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearNearestIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+
+    let LinearFloorIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
+        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearFloorIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+  
+
+    let LinearCeilingIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
+        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearCeilingIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+                
 
     // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
     //     let interp = InterpolateValueConstant value

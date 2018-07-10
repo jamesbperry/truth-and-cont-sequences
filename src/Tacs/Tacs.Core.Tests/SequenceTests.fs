@@ -5,50 +5,47 @@ open FsUnit
 open Tacs.Core.Types
 open Tacs.Core.Sequence
 open Tacs.Core
+open Tacs.Core.IntegerOps
+open Tacs.Core.FloatOps
 
 [<Test>]
 let ``points to intervals should be reversible`` () =
     let ptvals = [{position=1;value=1};{position=2;value=2};{position=3;value=3};{position=4;value=4}]
-    let ptseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;bound=InclusiveLow;ptvalues=ptvals}
-    let intseq = remodelToLinearIntervals IntegerOps.PositionScale IntegerOps.LinearNearestIntValue ptseq
-    let ptseq2 = remodelToPoints IntegerOps.PositionScale IntervalStart InclusiveLow intseq
+    let ptseq = {id="test";extrap=BeforeAndAfter;bound=InclusiveLow;ptvalues=ptvals}
+    let intseq = remodelToLinearIntervals IntegerPosition LinearNearestIntValue ptseq
+    let ptseq2 = remodelToPoints IntegerPosition IntervalStart InclusiveLow intseq
     ptseq2.ptvalues |> should equal ptseq.ptvalues
 
-// [<Test>]
-// let ``intervals to points should be reversible`` () =
-//     let intvals = [
-//         BackwardRayIntervalValue {``end``=Exclusive 1;value=backwardRayConstantValueFunc 1 1}; //eww... TODO use an active pattern and +/- inf?
-//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 1;value=1} {position=Exclusive 2;value=2}
-//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 2;value=2} {position=Exclusive 3;value=3}
-//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 3;value=3} {position=Exclusive 4;value=4}
-//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 4;value=4} {position=Exclusive 5;value=5}
-//         ForwardRayIntervalValue {start=Inclusive 5;value=forwardRayConstantValueFunc 5 5}];
-//     let interp = IntegerOps.InterpolateValueLinearNearest IntegerOps.PositionScale
-//     let intseq = {id="test"; intvalues=intvals}
-//     let ptseq = remodelToPoints RemodelAnchor.IntervalStart InclusiveLow intseq
-//     let intseq2 = remodelToLinearIntervals interp ptseq
-    //intseq2.intvalues |> should equal intseq.intvalues //Soooo... the value functions aren't equatable, naturally. Might have to rethink this thing.
+[<Test>]
+let ``intervals to points should be reversible`` () =
+    let intvals = [
+        BackwardRayInterval {``end``=Exclusive 1;value=ConstantValue 1}; //still need to look at clamping-to-interval-domain
+        LinearNearestIntInterval ({position=Inclusive 1;value=1},{position=Exclusive 2;value=2})
+        LinearNearestIntInterval ({position=Inclusive 2;value=2},{position=Exclusive 3;value=3})
+        LinearNearestIntInterval ({position=Inclusive 3;value=3},{position=Exclusive 4;value=4})
+        LinearNearestIntInterval ({position=Inclusive 4;value=4},{position=Exclusive 5;value=5})
+        ForwardRayInterval {start=Inclusive 5;value=ConstantValue 5}];
+    let intseq = {id="test"; intvalues=intvals}
+    let ptseq = remodelToPoints IntegerPosition IntervalStart InclusiveLow intseq
+    let intseq2 = remodelToLinearIntervals IntegerPosition LinearNearestIntValue ptseq
+    intseq2.intvalues |> should equal intseq.intvalues
 
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and float values`` () =
-    let iv = FloatOps.LinearFloatValue ({position=1;value=1.0},{position=100;value=100.0})
-    let inter = FiniteInterval 
-    let pos = 42
-    let pv = iv.At IntegerOps.PositionScale pos
+    let inter = FloatOps.LinearFloatInterval ({position=Inclusive 1;value=1.0},{position=Exclusive 100;value=100.0})
+    let pv = inter.value.At IntegerPosition 42
     pv |> should equal 42.0
 
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and int values`` () =
-    let iv = IntegerOps.LinearNearestIntValue ({position=1;value=1},{position=100;value=100})
-    let pos = 42
-    let pv = iv.At IntegerOps.PositionScale pos
+    let inter = LinearNearestIntInterval ({position=Inclusive 1;value=1},{position=Exclusive 100;value=100})
+    let pv = inter.value.At IntegerPosition 42
     pv |> should equal 42
 
 [<Test>]
 let ``linear interpolation should produce correct value for float positions and float values`` () =
-    let iv = FloatOps.LinearFloatValue ({position=1.0;value=1.0},{position=100.0;value=100.0})
-    let pos = 42.0
-    let pv = iv.At FloatOps.PositionScale pos
+    let inter = LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 100.0;value=100.0})
+    let pv = inter.value.At FloatPosition 42.0
     pv |> should equal 42.0
 
 (*

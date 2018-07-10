@@ -56,7 +56,6 @@ module Sequence =
             | _ -> None //TODO: handling/sanitizing a sequence with no nonzero-length intervals
 
         | ExtrapolationStrategy.AfterLast | ExtrapolationStrategy.NoExtrapolation -> None
-        | _ -> failwith "Behavior undefined for extrapolation strategy"
 
     let extrapolateFrom pn (extrap:ExtrapolationStrategy) (int:Interval<'p,'v>) =
         match extrap with
@@ -74,7 +73,6 @@ module Sequence =
                 Some (ForwardRayInterval {start=raystart;value=ConstantValue v})
             | _ -> None
         | ExtrapolationStrategy.BeforeFirst | ExtrapolationStrategy.NoExtrapolation -> None
-        | _ -> failwith "Behavior undefined for extrapolation strategy"
 
     let applyExtrapolation pn (extrap:ExtrapolationStrategy) (intseq:Interval<'p,'v> list) : Interval<'p,'v> list  =
         let head = List.head intseq

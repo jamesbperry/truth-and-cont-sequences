@@ -7,11 +7,11 @@ module FloatOps =
     let inline ClampScale (v:'a) =
         min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
-    let PositionScale (low:float) (high:float) (at:float) =
+    let FloatPosition (low:float) (high:float) (at:float) =
         ClampScale <| (at - low)/(high - low)           
 
     let InterpolatePosition (iv:FiniteInterval<float,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        FloatPosition iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:float) (p:'p) =
         v
@@ -31,7 +31,10 @@ module FloatOps =
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
 
     let LinearFloatValue (pstart,pend) =
-        {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>         
+        {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>     
+
+    let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
+        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearFloatValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}      
 
     // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
     //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)

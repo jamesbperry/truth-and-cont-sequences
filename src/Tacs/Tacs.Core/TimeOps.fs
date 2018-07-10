@@ -8,11 +8,11 @@ module TimeOps =
     let inline ClampScale (v:'a) =
         min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
-    let PositionScale (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
+    let TimePosition (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
         ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
     let InterpolatePosition (iv:FiniteInterval<DateTimeOffset,'v>) p : float =
-        PositionScale iv.start.position iv.``end``.position p
+        TimePosition iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:DateTimeOffset) (p:'p)  =
         v
@@ -38,7 +38,10 @@ module TimeOps =
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
 
     let LinearTimeValue (pstart,pend) =
-        {LinearTimeValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,DateTimeOffset>   
+        {LinearTimeValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,DateTimeOffset>  
+
+    let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
+        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearTimeValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}} 
 
     //Integer
     let Integrate (inseq:Interval<'a,DateTimeOffset> seq) : (Interval<'a,DateTimeOffset>) =
