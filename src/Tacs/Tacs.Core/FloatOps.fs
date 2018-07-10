@@ -29,6 +29,10 @@ module FloatOps =
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
         interface IIntervalValue<'p,float> with
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
+            member this.Split pn p =
+                let vmid = (this :> IIntervalValue<'p,float>).At pn p
+                let pmid = {position=p;value=vmid}
+                ({this with pend=pmid} :> IIntervalValue<'p,float>,{this with pstart=pmid} :> IIntervalValue<'p,float>)
 
     let LinearFloatValue (pstart,pend) =
         {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>     

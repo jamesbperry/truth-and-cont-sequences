@@ -36,6 +36,10 @@ module TimeOps =
         {pstart:PointValue<'p,DateTimeOffset>;pend:PointValue<'p,DateTimeOffset>} with
         interface IIntervalValue<'p,DateTimeOffset> with
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
+            member this.Split pn p =
+                let vmid = (this :> IIntervalValue<'p,DateTimeOffset>).At pn p
+                let pmid = {position=p;value=vmid}
+                ({this with pend=pmid} :> IIntervalValue<'p,DateTimeOffset>,{this with pstart=pmid} :> IIntervalValue<'p,DateTimeOffset>)
 
     let LinearTimeValue (pstart,pend) =
         {LinearTimeValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,DateTimeOffset>  

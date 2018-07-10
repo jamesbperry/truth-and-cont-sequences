@@ -121,11 +121,13 @@ module Types =
 
     type IIntervalValue<'p,'v> =
         abstract member At: PositionNormalizer<'p> -> 'p -> 'v
+        abstract member Split: PositionNormalizer<'p> -> 'p -> IIntervalValue<'p,'v> * IIntervalValue<'p,'v>
 
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with
             member this.At _ _ = this.value
+            member this.Split _ _ = (this :> IIntervalValue<'p,'v>,this :> IIntervalValue<'p,'v>)
 
     let ConstantValue<'p,'v> v =
         { ConstantValue.value=v } :> IIntervalValue<'p,'v>         

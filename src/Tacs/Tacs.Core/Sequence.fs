@@ -158,7 +158,7 @@ module Sequence =
             | InstantaneousInterval iiv -> pos |> isBeforeBoundary (Inclusive iiv.instant)
 
     let intervalContains (pos:'a) (intv:Interval<'a,'b>)  =
-        let notcontains = (intv |> intervalEndsBefore pos) && (intv |> intervalStartsAfter pos)
+        let notcontains = (intv |> intervalEndsBefore pos) || (intv |> intervalStartsAfter pos)
         not notcontains //I'm not not licking toads
 
     let intervalOptContains (pos:'a) (intop:Interval<'a,'b> option) =
@@ -202,23 +202,24 @@ module Sequence =
         | _ -> Some int //not finite so cannot be zero length
 
     let splitInterval (intop:Interval<'a,'b> option) (bound:BoundaryStrategy) pn (pos:'a) =
-        let endpto = getNearestPointInInterval intop pn pos
-        let trim int bnd (mid:PointValue<'a,'b>) =  
-            let (befmid, aftmid) =
+        let trim (int:Interval<'a,'b>) bnd = //todo clamp pos into interval 
+            let (vbef, vaft) = int.value.Split pn pos
+            let (pbef, paft) =
                 match bnd with
-                | InclusiveLow -> (Exclusive mid.position, Inclusive mid.position)
-                | InclusiveHigh -> (Inclusive mid.position, Exclusive mid.position)
+                | InclusiveLow -> (Exclusive pos, Inclusive pos)
+                | InclusiveHigh -> (Inclusive pos, Exclusive pos)
             match int with
             | BackwardRayInterval briv -> 
-                {before=Some <| BackwardRayInterval {``end``=befmid;value=briv.value};after=SomeNonzeroLength <| FiniteInterval {start=aftmid;``end``=briv.``end``;value=briv.value}}
+                {before=Some <| BackwardRayInterval {``end``=pbef;value=vbef};after=SomeNonzeroLength <| FiniteInterval {start=paft;``end``=briv.``end``;value=vaft}}
             | FiniteInterval fiv -> 
-                {before=SomeNonzeroLength <| FiniteInterval {start=fiv.start;``end``=befmid;value=fiv.value};after=SomeNonzeroLength <| FiniteInterval {start=aftmid;``end``=fiv.``end``;value=fiv.value}}
+                {before=SomeNonzeroLength <| FiniteInterval {start=fiv.start;``end``=pbef;value=vbef};after=SomeNonzeroLength <| FiniteInterval {start=paft;``end``=fiv.``end``;value=vaft}}
             | ForwardRayInterval friv -> 
-                {before=SomeNonzeroLength <| FiniteInterval {start=friv.start;``end``=befmid;value=friv.value};after=Some <| ForwardRayInterval {start=aftmid;value=friv.value}}
-            | InstantaneousInterval _ -> {before=Some int;after=Some int}
+                {before=SomeNonzeroLength <| FiniteInterval {start=friv.start;``end``=pbef;value=vbef};after=Some <| ForwardRayInterval {start=paft;value=vaft}}
+            | InstantaneousInterval iiv -> {before=Some <| InstantaneousInterval iiv;after=Some <| InstantaneousInterval iiv}
+            | _ -> failwith "Unsupported interval type"
 
-        let trimopt = Option.map3 trim
-        Option.defaultValue {before=None;after=None} <| trimopt intop (Some bound) endpto     
+        let trimopt = Option.map2 trim
+        Option.defaultValue {before=None;after=None} <| trimopt intop (Some bound)  
 
     let trimIntervalTo (intop:Interval<'a,'b> option) pn (pos:IntervalBoundary<'a>) =
         let strat = 
@@ -241,7 +242,10 @@ module Sequence =
         let skipped = Seq.skipWhile skipper inseq.intvalues
         let bounded =
              match strat with
-                | Inside -> Seq.skip 1 skipped
+                | Inside ->
+                    match Seq.head skipped with
+                    | FiniteInterval fi -> if intervalEndsBefore pos (FiniteInterval fi) then skipped else Seq.skip 1 skipped
+                    | _ -> skipped
                 | Intersected -> skipped
                 | Interpolated -> 
                     let head = Seq.head skipped
@@ -274,15 +278,19 @@ module Sequence =
                 | [] -> []                           
 
 
-    let sliceByInterval pn (s:IntervalSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
+    let sliceByInterval pn (s:IntervalSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) = 
+        printf "%A\n" s
+        printf "%A\n\n" inseq
         let strim = 
             match s.start with
             | Some start -> getIntervalsAtAndAfter inseq start.strategy pn start.position
             | None -> inseq.intvalues  
+        printf "%A\n\n" strim
         let etrim =
             match s.``end`` with
             | Some e -> getIntervalsAtAndBefore {inseq with intvalues=strim} e.strategy pn e.position
             | None -> strim
+        printf "%A\n\n\n" etrim        
         {inseq with intvalues=etrim}
 
     let sliceForwardByCount pn (s:ForwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
@@ -290,10 +298,10 @@ module Sequence =
         let ctrim = List.truncate s.count strim
         {inseq with intvalues=ctrim}
 
-    let takeLast n seq =  //cringe
-        let rev = Seq.rev seq
-        let trim = Seq.take n rev
-        Seq.rev trim |> List.ofSeq
+    let takeLast n list = 
+        let len = List.length list
+        let nskip = len - n |> max 0
+        List.skip nskip list
 
     let sliceBackwardByCount pn (s:BackwardSlice<'a>) (inseq:IntervalSequence<'a,'b>) : (IntervalSequence<'a,'b>) =
         let strim = getIntervalsAtAndBefore inseq s.``end``.strategy pn s.``end``.position

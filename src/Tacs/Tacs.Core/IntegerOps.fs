@@ -41,16 +41,28 @@ module IntegerOps =
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearNearest pn (this.pstart, this.pend) p
+            member this.Split pn p =
+                let vmid = (this :> IIntervalValue<'p,int>).At pn p
+                let pmid = {position=p;value=vmid}
+                ({this with pend=pmid} :> IIntervalValue<'p,int>,{this with pstart=pmid} :> IIntervalValue<'p,int>)
 
     type LinearFloorIntValue<'p> = 
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearFloor pn (this.pstart, this.pend) p
+            member this.Split pn p =
+                let vmid = (this :> IIntervalValue<'p,int>).At pn p
+                let pmid = {position=p;value=vmid}
+                ({this with pend=pmid} :> IIntervalValue<'p,int>,{this with pstart=pmid} :> IIntervalValue<'p,int>)
 
     type LinearCeilingIntValue<'p> = 
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearCeiling pn (this.pstart, this.pend) p
+            member this.Split pn p =
+                let vmid = (this :> IIntervalValue<'p,int>).At pn p
+                let pmid = {position=p;value=vmid}
+                ({this with pend=pmid} :> IIntervalValue<'p,int>,{this with pstart=pmid} :> IIntervalValue<'p,int>)
 
     let LinearNearestIntValue (pstart,pend) =
         {LinearNearestIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>  
