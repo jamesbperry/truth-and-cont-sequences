@@ -8,7 +8,7 @@
     <Compile Include="IntegerOps.fs" />
     <Compile Include="FloatOps.fs" />
     <Compile Include="TimeOps.fs" />
-    <Compile Include="Structures.fs" />
+    <!-- <Compile Include="Structures.fs" /> -->
     <Compile Include="Sequence.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

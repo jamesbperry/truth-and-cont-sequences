@@ -10,7 +10,7 @@ module FloatOps =
     let PositionScale (low:float) (high:float) (at:float) =
         ClampScale <| (at - low)/(high - low)           
 
-    let InterpolatePosition (iv:FiniteIntervalValue<float,'v>) p : float =
+    let InterpolatePosition (iv:FiniteInterval<float,'v>) p : float =
         PositionScale iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:float) (p:'p) =
@@ -21,30 +21,38 @@ module FloatOps =
         let npos = pinterp pti.position ptf.position p
         pti.value + (dv * npos)
 
-    let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-        let interp = InterpolateValueConstant value
-        FiniteIntervalValue {start=startpos;``end``=endpos;value=interp};
+    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
+    //     let interp = InterpolateValueConstant value
+    //     FiniteInterval {start=startpos;``end``=endpos;value=interp};
 
-    let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
-        let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-        FiniteIntervalValue {start=startpt.position;``end``=endpt.position;value=interp};
+    type LinearFloatValue<'p> = 
+        {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
+        interface IIntervalValue<'p,float> with
+            member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
 
-    let Integral (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let LinearFloatValue (pstart,pend) =
+        {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>         
+
+    // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
+    //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
+    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+
+    let Integral (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
     
-    let Average (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let Average (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
 
-    let Maximum (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let Maximum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
 
-    let Minimum (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let Minimum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
 
-    let Stdev (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let Stdev (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
 
-    let ValueRange (inseq:IntervalValue<'a,float> seq) : (IntervalValue<'a,float>) =
+    let ValueRange (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
                       
                       

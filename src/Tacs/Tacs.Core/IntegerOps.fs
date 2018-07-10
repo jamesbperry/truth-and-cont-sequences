@@ -10,7 +10,7 @@ module IntegerOps =
     let PositionScale (low:int) (high:int) (at:int) =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
-    let InterpolatePosition (iv:FiniteIntervalValue<int,'v>) p : float =
+    let InterpolatePosition (iv:FiniteInterval<int,'v>) p : float =
         PositionScale iv.start.position iv.``end``.position p
 
     let InterpolateValueConstant (v:int) (p:'p) : int =
@@ -37,38 +37,62 @@ module IntegerOps =
         let f = int <| ceil (float dv * npos)
         pti.value + f
 
-    let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-        let interp = InterpolateValueConstant value
-        FiniteIntervalValue {start=startpos;``end``=endpos;value=interp};
+    type LinearNearestIntValue<'p> = 
+        {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
+        interface IIntervalValue<'p,int> with
+            member this.At pn p = InterpolateValueLinearNearest pn (this.pstart, this.pend) p
 
-    let LinearNearest<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) = //refactor to dedupe
-        let interp = InterpolateValueLinearNearest pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-        FiniteIntervalValue {start=startpt.position;``end``=endpt.position;value=interp};
+    type LinearFloorIntValue<'p> = 
+        {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
+        interface IIntervalValue<'p,int> with
+            member this.At pn p = InterpolateValueLinearFloor pn (this.pstart, this.pend) p
 
-    let LinearFloor<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
-        let interp = InterpolateValueLinearFloor pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-        FiniteIntervalValue {start=startpt.position;``end``=endpt.position;value=interp};
+    type LinearCeilingIntValue<'p> = 
+        {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
+        interface IIntervalValue<'p,int> with
+            member this.At pn p = InterpolateValueLinearCeiling pn (this.pstart, this.pend) p
 
-    let LinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
-        let interp = InterpolateValueLinearCeiling pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-        FiniteIntervalValue {start=startpt.position;``end``=endpt.position;value=interp};
+    let LinearNearestIntValue (pstart,pend) =
+        {LinearNearestIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>  
+
+    let LinearFloorIntValue (pstart,pend) =
+        {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>    
+
+    let LinearCeilingIntValue (pstart,pend) =
+        {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>                     
+
+    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
+    //     let interp = InterpolateValueConstant value
+    //     FiniteInterval {start=startpos;``end``=endpos;value=interp};
+
+    // let LinearNearest<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) = //refactor to dedupe
+    //     let interp = InterpolateValueLinearNearest pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
+    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+
+    // let LinearFloor<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
+    //     let interp = InterpolateValueLinearFloor pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
+    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+
+    // let LinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
+    //     let interp = InterpolateValueLinearCeiling pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
+    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
 
     //Integer
-    let Integral (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let Integral (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
     
-    let Average (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let Average (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
 
-    let Maximum (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let Maximum (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
 
-    let Minimum (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let Minimum (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
 
-    let Stdev (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let Stdev (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
 
-    let ValueRange (inseq:IntervalValue<'a,int> seq) : (IntervalValue<'a,int>) =
+    let ValueRange (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"
                       

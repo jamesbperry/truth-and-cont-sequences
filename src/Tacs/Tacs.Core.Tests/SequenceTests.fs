@@ -10,51 +10,48 @@ open Tacs.Core
 let ``points to intervals should be reversible`` () =
     let ptvals = [{position=1;value=1};{position=2;value=2};{position=3;value=3};{position=4;value=4}]
     let ptseq = {id="test";extrap=ExtrapolationStrategy.BeforeAndAfter;bound=InclusiveLow;ptvalues=ptvals}
-    let interp = IntegerOps.InterpolateValueLinearNearest IntegerOps.PositionScale
-    let intseq = remodelToLinearIntervals interp ptseq
-    let ptseq2 = remodelToPoints IntervalStart InclusiveLow intseq
+    let intseq = remodelToLinearIntervals IntegerOps.PositionScale IntegerOps.LinearNearestIntValue ptseq
+    let ptseq2 = remodelToPoints IntegerOps.PositionScale IntervalStart InclusiveLow intseq
     ptseq2.ptvalues |> should equal ptseq.ptvalues
 
-[<Test>]
-let ``intervals to points should be reversible`` () =
-    let intvals = [
-        BackwardRayIntervalValue {``end``=Exclusive 1;value=backwardRayConstantValueFunc 1 1}; //eww... TODO use an active pattern and +/- inf?
-        IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 1;value=1} {position=Exclusive 2;value=2}
-        IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 2;value=2} {position=Exclusive 3;value=3}
-        IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 3;value=3} {position=Exclusive 4;value=4}
-        IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 4;value=4} {position=Exclusive 5;value=5}
-        ForwardRayIntervalValue {start=Inclusive 5;value=forwardRayConstantValueFunc 5 5}];
-    let interp = IntegerOps.InterpolateValueLinearNearest IntegerOps.PositionScale
-    let intseq = {id="test"; intvalues=intvals}
-    let ptseq = remodelToPoints RemodelAnchor.IntervalStart InclusiveLow intseq
-    let intseq2 = remodelToLinearIntervals interp ptseq
-    intseq2.intvalues |> should equal intseq.intvalues //Soooo... the value functions aren't equatable, naturally. Might have to rethink this thing.
+// [<Test>]
+// let ``intervals to points should be reversible`` () =
+//     let intvals = [
+//         BackwardRayIntervalValue {``end``=Exclusive 1;value=backwardRayConstantValueFunc 1 1}; //eww... TODO use an active pattern and +/- inf?
+//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 1;value=1} {position=Exclusive 2;value=2}
+//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 2;value=2} {position=Exclusive 3;value=3}
+//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 3;value=3} {position=Exclusive 4;value=4}
+//         IntegerOps.LinearNearest IntegerOps.PositionScale {position=Inclusive 4;value=4} {position=Exclusive 5;value=5}
+//         ForwardRayIntervalValue {start=Inclusive 5;value=forwardRayConstantValueFunc 5 5}];
+//     let interp = IntegerOps.InterpolateValueLinearNearest IntegerOps.PositionScale
+//     let intseq = {id="test"; intvalues=intvals}
+//     let ptseq = remodelToPoints RemodelAnchor.IntervalStart InclusiveLow intseq
+//     let intseq2 = remodelToLinearIntervals interp ptseq
+    //intseq2.intvalues |> should equal intseq.intvalues //Soooo... the value functions aren't equatable, naturally. Might have to rethink this thing.
 
-(* 
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and float values`` () =
-    let iv = FiniteIntervalValue {start={position=1;value=1.0};``end``={position=100;value=100.0}}
+    let iv = FloatOps.LinearFloatValue ({position=1;value=1.0},{position=100;value=100.0})
+    let inter = FiniteInterval 
     let pos = 42
-    let vstrat = Interpolate IntegerOps.InterpolatePosition FloatOps.InterpolateValueLinear 
-    let pv = getExactPointInInterval vstrat (Some iv) pos
-    pv |> should equal (Some {position=42;value=42.0})
+    let pv = iv.At IntegerOps.PositionScale pos
+    pv |> should equal 42.0
 
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and int values`` () =
-    let iv = FiniteIntervalValue {start={position=1;value=1};``end``={position=100;value=100}}
+    let iv = IntegerOps.LinearNearestIntValue ({position=1;value=1},{position=100;value=100})
     let pos = 42
-    let vstrat = Interpolate IntegerOps.InterpolatePosition IntegerOps.InterpolateValueLinear
-    let pv = getExactPointInInterval vstrat (Some iv) pos
-    pv |> should equal (Some {position=42;value=42})
+    let pv = iv.At IntegerOps.PositionScale pos
+    pv |> should equal 42
 
 [<Test>]
 let ``linear interpolation should produce correct value for float positions and float values`` () =
-    let iv = FiniteIntervalValue {start={position=1.0;value=1.0};``end``={position=100.0;value=100.0}}
-    let pos = 42.42
-    let vstrat = Interpolate FloatOps.InterpolatePosition FloatOps.InterpolateValueLinear
-    let pv = getExactPointInInterval vstrat (Some iv) pos
-    pv |> should equal (Some {position=42.42;value=42.42})
+    let iv = FloatOps.LinearFloatValue ({position=1.0;value=1.0},{position=100.0;value=100.0})
+    let pos = 42.0
+    let pv = iv.At FloatOps.PositionScale pos
+    pv |> should equal 42.0
 
+(*
 [<Test>]
 let ``interpolation should work in middle of sequences`` () =
     let intvals = [

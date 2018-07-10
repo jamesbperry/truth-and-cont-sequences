@@ -117,27 +117,41 @@ module Types =
         static member Start = NormalizedPosition 0.0
         static member End = NormalizedPosition 1.0
 
-    type FiniteIntervalValue<'p,'v> = { start:IntervalBoundary<'p>; ``end``:IntervalBoundary<'p>; value:'p->'v}
-    type ForwardRayIntervalValue<'p,'v> = { start:IntervalBoundary<'p>; value:'p->'v}
-    type BackwardRayIntervalValue<'p,'v> = { ``end``:IntervalBoundary<'p>; value:'p->'v}
-    type InstantaneousIntervalValue<'p,'v> = { instant:'p; value:'p->'v}
+    type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
+    type ValueInterpolator<'p,'v> = 'p -> 'v
 
-    type IntervalValue<'a,'b> =
-        | FiniteIntervalValue of FiniteIntervalValue<'a,'b>
-        | ForwardRayIntervalValue of ForwardRayIntervalValue<'a,'b>
-        | BackwardRayIntervalValue of BackwardRayIntervalValue<'a,'b>
-        | InstantaneousIntervalValue of InstantaneousIntervalValue<'a,'b>
+    type IIntervalValue<'p,'v> =
+        abstract member At: PositionNormalizer<'p> -> 'p -> 'v
+
+    type ConstantValue<'p,'v> =
+        { value: 'v }
+        interface IIntervalValue<'p,'v> with
+            member this.At _ _ = this.value
+
+    let ConstantValue<'p,'v> v =
+        { ConstantValue.value=v } :> IIntervalValue<'p,'v>         
+
+    type FiniteInterval<'p,'v> = { start:IntervalBoundary<'p>; ``end``:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
+    type ForwardRayInterval<'p,'v> = { start:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
+    type BackwardRayInterval<'p,'v> = { ``end``:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
+    type InstantaneousInterval<'p,'v> = { instant:'p; value:IIntervalValue<'p,'v>}
+
+    type Interval<'a,'b> =
+        | FiniteInterval of FiniteInterval<'a,'b>
+        | ForwardRayInterval of ForwardRayInterval<'a,'b>
+        | BackwardRayInterval of BackwardRayInterval<'a,'b>
+        | InstantaneousInterval of InstantaneousInterval<'a,'b>
         member self.value =
             match self with
-            | FiniteIntervalValue fiv -> fiv.value
-            | ForwardRayIntervalValue friv -> friv.value
-            | BackwardRayIntervalValue briv -> briv.value
-            | InstantaneousIntervalValue iiv -> iiv.value
+            | FiniteInterval fiv -> fiv.value
+            | ForwardRayInterval friv -> friv.value
+            | BackwardRayInterval briv -> briv.value
+            | InstantaneousInterval iiv -> iiv.value
 
-    type SplitIntervalValue<'p,'v> = {before:IntervalValue<'p,'v> option;after:IntervalValue<'p,'v> option}  
+    type SplitIntervalValue<'p,'v> = {before:Interval<'p,'v> option;after:Interval<'p,'v> option}  
     
-    type InterpolationFunction<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> PointValue<'p,'v>
-    type AggregationFunction<'p,'v> = IntervalValue<'p,'v> seq -> IntervalValue<'p,'v>
+    type InterpolationFunction<'p,'v> = FiniteInterval<'p,'v> -> 'p -> PointValue<'p,'v>
+    type AggregationFunction<'p,'v> = Interval<'p,'v> seq -> Interval<'p,'v>
 
 
 
@@ -149,11 +163,25 @@ module Types =
     // type SplinePoint<'v> = 'v * Angle * Weight
     // type SplinedValue<'v> = SplinePoint<'v> * SplinePoint<'v> //note: not a LinearValue<SplinePoint<'v>> bc diff. interpretation strategy
 
-    type PositionInterpolator<'p,'v> = FiniteIntervalValue<'p,'v> -> 'p -> float
-    type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
+    // type IVInterp<'p,'v> =
+    //     abstract member At: 'p -> 'v
 
+    // type FLinterp<'p> = { start:PointValue<'p,float>;``end``:PointValue<'p,float> } with
+    //     interface IVInterp<'p,float> with
+    //         member this.At pt = 42.0    
+
+    // [<CustomEquality;NoComparison>]
+    // type FintInterp =
+    //     inherit ValueInterpolator<int,int>
+    //     override this.Invoke p = 42
+    //     override this.Equals(other) =
+    //         match other with
+    //         | :? FintInterp as tother -> this.Equals(tother)
+    //         | _ -> false
+    //     interface System.IEquatable<FintInterp> with
+    //         member this.Equals other = true; //LOL
     //TODO move this...
-    let Interpolate (pinterp) (vinterp) (iv:FiniteIntervalValue<'p,'v>) (p:'p) : PointValue<'p,'v> =
+    let Interpolate (pinterp) (vinterp) (iv:FiniteInterval<'p,'v>) (p:'p) : PointValue<'p,'v> =
         let s = 1.0 * pinterp iv p
         let v = vinterp iv s
         {position=p;value=v}    
