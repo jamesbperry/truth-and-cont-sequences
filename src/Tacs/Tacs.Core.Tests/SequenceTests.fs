@@ -26,9 +26,6 @@ let ``intervals to points should be reversible`` () =
     let intseq = {id="test"; intvalues=intvals;preextrap=ConstantBefore (Exclusive 1) 1;postextrap=ConstantAfter (Exclusive 5) 5}
     let ptseq = remodelToPoints IntegerPosition InclusiveLow intseq
     let intseq2 = remodelPairwiseToIntervals IntegerPosition LinearNearestIntValue ptseq
-    printf "%A\n\n\n" intseq.intvalues
-    printf "%A\n\n\n" ptseq.ptvalues
-    printf "%A\n\n\n" intseq2.intvalues
     (Array.ofList intseq2.intvalues) |> should equal (Array.ofList intseq.intvalues)
 
 [<Test>]

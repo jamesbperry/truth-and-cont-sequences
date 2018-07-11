@@ -83,23 +83,6 @@ module IntegerOps =
     let LinearCeilingIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
         {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
                 
-
-    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-    //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;endbound=endpos;value=interp};
-
-    // let LinearNearest<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) = //refactor to dedupe
-    //     let interp = InterpolateValueLinearNearest pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
-
-    // let LinearFloor<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
-    //     let interp = InterpolateValueLinearFloor pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
-
-    // let LinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
-    //     let interp = InterpolateValueLinearCeiling pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
-
     //Integer
     let Integral (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =
         failwith "not implemented"

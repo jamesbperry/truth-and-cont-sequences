@@ -137,32 +137,3 @@ module Types =
     // type Weight = Weight of float
     // type SplinePoint<'v> = 'v * Angle * Weight
     // type SplinedValue<'v> = SplinePoint<'v> * SplinePoint<'v> //note: not a LinearValue<SplinePoint<'v>> bc diff. interpretation strategy
-
-    // type IVInterp<'p,'v> =
-    //     abstract member At: 'p -> 'v
-
-    // type FLinterp<'p> = { start:PointValue<'p,float>;endbound:PointValue<'p,float> } with
-    //     interface IVInterp<'p,float> with
-    //         member this.At pt = 42.0    
-
-    // [<CustomEquality;NoComparison>]
-    // type FintInterp =
-    //     inherit ValueInterpolator<int,int>
-    //     override this.Invoke p = 42
-    //     override this.Equals(other) =
-    //         match other with
-    //         | :? FintInterp as tother -> this.Equals(tother)
-    //         | _ -> false
-    //     interface System.IEquatable<FintInterp> with
-    //         member this.Equals other = true; //LOL
-    //TODO move this...
-    let Interpolate (pinterp) (vinterp) (iv:Interval<'p,'v>) (p:'p) : PointValue<'p,'v> =
-        let s = 1.0 * pinterp iv p
-        let v = vinterp iv s
-        {position=p;value=v}    
-
-    // let InterpolateValuePositiveStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-    //     iv.start.value
- 
-    // let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-    //     iv.endbound.value

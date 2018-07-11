@@ -21,10 +21,6 @@ module FloatOps =
         let npos = pinterp pti.position ptf.position p
         pti.value + (dv * npos)
 
-    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-    //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;endbound=endpos;value=interp};
-
     type LinearFloatValue<'p> = 
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
         interface IIntervalValue<'p,float> with
@@ -39,10 +35,6 @@ module FloatOps =
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
         {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}      
-
-    // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
-    //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
 
     let Integral (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"
