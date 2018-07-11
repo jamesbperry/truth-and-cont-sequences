@@ -10,8 +10,8 @@ module FloatOps =
     let FloatPosition (low:float) (high:float) (at:float) =
         ClampScale <| (at - low)/(high - low)           
 
-    let InterpolatePosition (iv:FiniteInterval<float,'v>) p : float =
-        FloatPosition iv.start.position iv.``end``.position p
+    let InterpolatePosition (iv:Interval<float,'v>) p : float =
+        FloatPosition iv.startbound.position iv.endbound.position p
 
     let InterpolateValueConstant (v:float) (p:'p) =
         v
@@ -23,7 +23,7 @@ module FloatOps =
 
     // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
     //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;``end``=endpos;value=interp};
+    //     FiniteInterval {start=startpos;endbound=endpos;value=interp};
 
     type LinearFloatValue<'p> = 
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
@@ -38,11 +38,11 @@ module FloatOps =
         {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>     
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
-        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearFloatValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}      
+        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}      
 
     // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
     //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
 
     let Integral (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
         failwith "not implemented"

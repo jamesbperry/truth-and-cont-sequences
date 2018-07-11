@@ -11,8 +11,8 @@ module TimeOps =
     let TimePosition (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
         ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
-    let InterpolatePosition (iv:FiniteInterval<DateTimeOffset,'v>) p : float =
-        TimePosition iv.start.position iv.``end``.position p
+    let InterpolatePosition (iv:Interval<DateTimeOffset,'v>) p : float =
+        TimePosition iv.startbound.position iv.endbound.position p
 
     let InterpolateValueConstant (v:DateTimeOffset) (p:'p)  =
         v
@@ -23,14 +23,6 @@ module TimeOps =
         let npos = pinterp pti.position ptf.position p
         let del = TimeSpan.FromTicks <| int64 (float dv.Ticks * npos)
         pti.value + del
-
-    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-    //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;``end``=endpos;value=interp};
-
-    // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,DateTimeOffset>) (endpt:BoundaryValue<'p,DateTimeOffset>) =
-    //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
 
     type LinearTimeValue<'p> = 
         {pstart:PointValue<'p,DateTimeOffset>;pend:PointValue<'p,DateTimeOffset>} with
@@ -45,9 +37,9 @@ module TimeOps =
         {LinearTimeValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,DateTimeOffset>  
 
     let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
-        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearTimeValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}} 
+        {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}} 
 
-    //Integer
+    //DateTimeOffset
     let Integrate (inseq:Interval<'a,DateTimeOffset> seq) : (Interval<'a,DateTimeOffset>) =
         failwith "not implemented"
     

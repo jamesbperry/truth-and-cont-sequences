@@ -10,8 +10,8 @@ module IntegerOps =
     let IntegerPosition (low:int) (high:int) (at:int) =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
-    let InterpolatePosition (iv:FiniteInterval<int,'v>) p : float =
-        IntegerPosition iv.start.position iv.``end``.position p
+    let InterpolatePosition (iv:Interval<int,'v>) p : float =
+        IntegerPosition iv.startbound.position iv.endbound.position p
 
     let InterpolateValueConstant (v:int) (p:'p) : int =
         v
@@ -74,31 +74,31 @@ module IntegerOps =
         {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,int>
 
     let LinearNearestIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearNearestIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearNearestIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
 
     let LinearFloorIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearFloorIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearFloorIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
   
 
     let LinearCeilingIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        FiniteInterval {start=startb.position;``end``=endb.position;value={LinearCeilingIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
                 
 
     // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
     //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;``end``=endpos;value=interp};
+    //     FiniteInterval {start=startpos;endbound=endpos;value=interp};
 
     // let LinearNearest<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) = //refactor to dedupe
     //     let interp = InterpolateValueLinearNearest pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
 
     // let LinearFloor<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
     //     let interp = InterpolateValueLinearFloor pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
 
     // let LinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,int>) (endpt:BoundaryValue<'p,int>) =
     //     let interp = InterpolateValueLinearCeiling pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;``end``=endpt.position;value=interp};
+    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
 
     //Integer
     let Integral (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =

@@ -2,24 +2,21 @@ namespace Tacs.Core
 
 module Types =
 
-    // type BoundaryType =
-    //     | Inclusive
-    //     | Exclusive
-
-    //type IntervalBoundary<'p> = { value:'p; nature:BoundaryType }
-
     type BoundaryStrategy =
         | InclusiveLow
         | InclusiveHigh
 
+    type Inclusivity =
+        | IsInclusive
+        | IsExclusive
+
     type IntervalBoundary<'p> =
         | Inclusive of 'p
         | Exclusive of 'p
-        //TODO try | PositiveInfinity  and | NegativeInfinity
         member self.position =
             match self with
             | Inclusive i -> i
-            | Exclusive e -> e
+            | Exclusive e -> e      
 
     type SliceStrategy = 
         | Inside //Exclusive
@@ -37,9 +34,9 @@ module Types =
 
     type SliceBoundary<'p> = { position:'p; strategy:SliceStrategy }
 
-    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; ``end``:SliceBoundary<'p> option; }
+    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; endbound:SliceBoundary<'p> option; }
     type ForwardSlice<'p> = { start:SliceBoundary<'p>; count:int; }
-    type BackwardSlice<'p> = {count:int; ``end``:SliceBoundary<'p>; }
+    type BackwardSlice<'p> = {count:int; endbound:SliceBoundary<'p>; }
 
     type Slice<'p> = 
         | IntervalSlice of IntervalSlice<'p>
@@ -79,15 +76,6 @@ module Types =
         | Points of 'p list
         | Intervals of IntervalSize<'dp> * Anchor<'p>
 
-    type CompressionStrategy = //Shouldn't types define compression strategy too?
-        | None = 0
-        | Custom = 1
-        | SwingingDoor  = 2
-        | LCA = 3
-        | Plot = 4
-
-    type Compress<'a> = { strategy:CompressionStrategy; config:string } //Work out the typing on these
-
     // type Operations<'p> =
     //     | Remodel of Remodel
     //     | Slice of Slice<'p>
@@ -108,7 +96,7 @@ module Types =
     type BoundaryValue<'p,'v> = { position:IntervalBoundary<'p>; value:'v }
 
     type PointValue<'p,'v> =  { position:'p; value:'v } with
-        static member ofBoundary (bv:BoundaryValue<'p,'v>) =
+        static member OfBoundary (bv:BoundaryValue<'p,'v>) =
             {position=bv.position.position;value=bv.value}
 
     type NormalizedPosition = 
@@ -123,6 +111,9 @@ module Types =
         abstract member At: PositionNormalizer<'p> -> 'p -> 'v
         abstract member Split: PositionNormalizer<'p> -> 'p -> IIntervalValue<'p,'v> * IIntervalValue<'p,'v>
 
+    type IExtrapolation<'p,'v> =
+        abstract member At: PositionNormalizer<'p> -> 'p -> 'v option
+
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with
@@ -132,29 +123,12 @@ module Types =
     let ConstantValue<'p,'v> v =
         { ConstantValue.value=v } :> IIntervalValue<'p,'v>         
 
-    type FiniteInterval<'p,'v> = { start:IntervalBoundary<'p>; ``end``:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
-    type ForwardRayInterval<'p,'v> = { start:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
-    type BackwardRayInterval<'p,'v> = { ``end``:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
-    type InstantaneousInterval<'p,'v> = { instant:'p; value:IIntervalValue<'p,'v>}
-
-    type Interval<'a,'b> =
-        | FiniteInterval of FiniteInterval<'a,'b>
-        | ForwardRayInterval of ForwardRayInterval<'a,'b>
-        | BackwardRayInterval of BackwardRayInterval<'a,'b>
-        | InstantaneousInterval of InstantaneousInterval<'a,'b>
-        member self.value =
-            match self with
-            | FiniteInterval fiv -> fiv.value
-            | ForwardRayInterval friv -> friv.value
-            | BackwardRayInterval briv -> briv.value
-            | InstantaneousInterval iiv -> iiv.value
-
-    type SplitIntervalValue<'p,'v> = {before:Interval<'p,'v> option;after:Interval<'p,'v> option}  
+    type Interval<'p,'v> = { startbound:IntervalBoundary<'p>; endbound:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
     
-    type InterpolationFunction<'p,'v> = FiniteInterval<'p,'v> -> 'p -> PointValue<'p,'v>
+    type SplitInterval<'p,'v> = {before:Interval<'p,'v> option;after:Interval<'p,'v> option}  
+    
+    type InterpolationFunction<'p,'v> = Interval<'p,'v> -> 'p -> PointValue<'p,'v>
     type AggregationFunction<'p,'v> = Interval<'p,'v> seq -> Interval<'p,'v>
-
-
 
     type Quality = Quality of string //placeholder
     type QualitiedValue<'v> = 'v * Quality list
@@ -167,7 +141,7 @@ module Types =
     // type IVInterp<'p,'v> =
     //     abstract member At: 'p -> 'v
 
-    // type FLinterp<'p> = { start:PointValue<'p,float>;``end``:PointValue<'p,float> } with
+    // type FLinterp<'p> = { start:PointValue<'p,float>;endbound:PointValue<'p,float> } with
     //     interface IVInterp<'p,float> with
     //         member this.At pt = 42.0    
 
@@ -182,7 +156,7 @@ module Types =
     //     interface System.IEquatable<FintInterp> with
     //         member this.Equals other = true; //LOL
     //TODO move this...
-    let Interpolate (pinterp) (vinterp) (iv:FiniteInterval<'p,'v>) (p:'p) : PointValue<'p,'v> =
+    let Interpolate (pinterp) (vinterp) (iv:Interval<'p,'v>) (p:'p) : PointValue<'p,'v> =
         let s = 1.0 * pinterp iv p
         let v = vinterp iv s
         {position=p;value=v}    
@@ -191,4 +165,4 @@ module Types =
     //     iv.start.value
  
     // let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-    //     iv.``end``.value
+    //     iv.endbound.value

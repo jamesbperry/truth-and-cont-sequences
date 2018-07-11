@@ -128,7 +128,7 @@ and SliceArgs =
     | [<AltCommandLine("-s")>] Start of start:string option
     | [<AltCommandLine("-ss")>] StartStrategy of startstrategy:BoundaryStrategy option
     | [<AltCommandLine("-c")>] Count of count:int option
-    | [<AltCommandLine("-e")>] End of ``end``:string option
+    | [<AltCommandLine("-e")>] End of endbound:string option
     | [<AltCommandLine("-es")>] EndStrategy of endstrategy:BoundaryStrategy option
 with
     interface IArgParserTemplate with
