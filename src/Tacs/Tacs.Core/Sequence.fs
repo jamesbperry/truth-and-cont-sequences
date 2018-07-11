@@ -225,7 +225,7 @@ module Sequence =
              match strat with
                 | Inside ->
                     let head = Seq.head skipped
-                    if intervalEndsBefore pos head then skipped else Seq.skip 1 skipped
+                    if intervalStartsAfter pos head then skipped else Seq.skip 1 skipped
                 | Intersected -> skipped
                 | Interpolated -> 
                     let head = Seq.head skipped

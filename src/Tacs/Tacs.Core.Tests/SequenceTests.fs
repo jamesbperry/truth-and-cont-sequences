@@ -102,35 +102,30 @@ let ``interval slice between point positions should produce correct subsequence`
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Inclusive 3.5;value=3.5});];
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
-(*
+
 [<Test>]
 let ``unbounded-end interval slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}]; 
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});]; 
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = { IntervalSlice.start=Some {position=3.5;strategy=SliceStrategy.Interpolated};endbound= None}   
     let subseq = sliceByInterval FloatPosition slstrat fullseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 3.5;value=3.5},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
 
 [<Test>]
 let ``forward interpolated slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {ForwardSlice.start={position=1.5;strategy=SliceStrategy.Interpolated};count=3}   
     let subseq = sliceForwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
@@ -142,13 +137,11 @@ let ``forward interpolated slice should produce correct subsequence`` () =
 [<Test>]
 let ``forward intersected slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {ForwardSlice.start={position=1.5;strategy=SliceStrategy.Intersected};count=3}   
     let subseq = sliceForwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
@@ -160,13 +153,11 @@ let ``forward intersected slice should produce correct subsequence`` () =
 [<Test>]
 let ``forward inside slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {ForwardSlice.start={position=1.5;strategy=SliceStrategy.Inside};count=2}   
     let subseq = sliceForwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
@@ -178,13 +169,11 @@ let ``forward inside slice should produce correct subsequence`` () =
 let ``overflowing forward inside slice should produce correct subsequence`` () =
 
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {ForwardSlice.start={position=0.5;strategy=SliceStrategy.Inside};count=200}   
     let subseq = sliceForwardByCount FloatPosition slstrat fullseq
     let expectedvals = allvals
@@ -194,30 +183,26 @@ let ``overflowing forward inside slice should produce correct subsequence`` () =
 [<Test>]
 let ``backward interpolated slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0})];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {BackwardSlice.endbound={position=3.5;strategy=SliceStrategy.Interpolated};count=2}   
     let subseq = sliceBackwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
-        LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 3.5;value=3.5});];
+        LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Inclusive 3.5;value=3.5});];
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
 
 [<Test>]
 let ``backward intersected slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];  
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];  
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {BackwardSlice.endbound={position=3.5;strategy=SliceStrategy.Intersected};count=2}   
     let subseq = sliceBackwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
@@ -228,13 +213,11 @@ let ``backward intersected slice should produce correct subsequence`` () =
 [<Test>]
 let ``backward inside slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {BackwardSlice.endbound={position=4.5;strategy=SliceStrategy.Inside};count=2}   
     let subseq = sliceBackwardByCount FloatPosition slstrat fullseq
     let expectedvals = [
@@ -245,21 +228,12 @@ let ``backward inside slice should produce correct subsequence`` () =
 [<Test>]
 let ``overflowing backward inside slice should produce correct subsequence`` () =
     let allvals = [
-        BackwardRayInterval {endbound= Exclusive 1.0;value=ConstantValue 1.0};
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 5.0;value=5.0});
-        ForwardRayInterval {start= Inclusive 5.0;value=ConstantValue 5.0}];
-    let fullseq = {id="test";intvalues=allvals}
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
+    let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
     let slstrat = {BackwardSlice.endbound={position=5.5;strategy=SliceStrategy.Inside};count=200}   
     let subseq = sliceBackwardByCount FloatPosition slstrat fullseq
     let expectedvals = allvals
-
-
-    printf "%A\n\n\n" subseq.intvalues
-    printf "%A" expectedvals
-
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)
-
-    *)
