@@ -225,7 +225,7 @@ module Sequence =
              match strat with
                 | Inside ->
                     let head = Seq.head skipped
-                    if intervalEndsBefore pos head then skipped else Seq.skip 1 skipped
+                    if intervalStartsAfter pos head then skipped else Seq.skip 1 skipped
                 | Intersected -> skipped
                 | Interpolated -> 
                     let head = Seq.head skipped
@@ -252,8 +252,6 @@ module Sequence =
                     match (intervalContains pos last) with
                     | true -> 
                         let split = splitInterval lastopt InclusiveHigh pn pos
-                        printfn "Split--"
-                        printfn "%A" split
                         match (split.before) with
                         | Some sint -> withDifferentLast wintersect sint
                         | None -> wintersect
@@ -261,20 +259,14 @@ module Sequence =
                 | None -> []                
         
     let sliceByInterval pn (s:IntervalSlice<'p>) (inseq:IntervalSequence<'p,'v>) : (IntervalSequence<'p,'v>) = 
-        printfn "Original:"
-        printfn "%A" inseq.intvalues
         let strim = 
             match s.start with
             | Some start -> getIntervalsAtAndAfter inseq start.strategy pn start.position
             | None -> inseq.intvalues  
-        printfn "Start trimmed:"
-        printfn "%A" strim
         let etrim =
             match s.endbound with
             | Some e -> getIntervalsAtAndBefore {inseq with intvalues=strim} e.strategy pn e.position
-            | None -> strim     
-        printfn "End trimmed:"
-        printfn "%A" etrim      
+            | None -> strim      
         {inseq with intvalues=etrim}
 
     let sliceForwardByCount pn (s:ForwardSlice<'p>) (inseq:IntervalSequence<'p,'v>) : (IntervalSequence<'p,'v>) =
