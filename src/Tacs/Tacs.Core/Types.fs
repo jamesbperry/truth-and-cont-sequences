@@ -1,5 +1,6 @@
 namespace Tacs.Core
 
+open System
 module Types =
 
     type BoundaryStrategy =
@@ -107,28 +108,55 @@ module Types =
     type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
     type ValueInterpolator<'p,'v> = 'p -> 'v
 
+    //We want .Split to return ('concrete*'concrete). 
+    //But F# lacks direct covariance and has a few other constraints, so it seems this is not possible in straightforward ways. 
+    //Generic type constraints to interfaces do behave covariantly, though. We will abuse those.
+    //By passing in a concrete IIntervalValue implementation as an argument to its own .Split instance, we capture its type as a 'generic constrained to implement IIntervalValue.
+    //The concrete type becomes the return type of .Split, and after using a type match wrapped in a generic function to convert the output,
+    //Voilà, covariance.
     type IIntervalValue<'p,'v> =
         abstract member At: PositionNormalizer<'p> -> 'p -> 'v
-        abstract member Split: PositionNormalizer<'p> -> 'p -> IIntervalValue<'p,'v> * IIntervalValue<'p,'v>
+        abstract member Split: PositionNormalizer<'p> -> 'p -> 'i -> 'i * 'i when 'i :> IIntervalValue<'p,'v>
 
-    type IExtrapolation<'p,'v> =
-        abstract member At: PositionNormalizer<'p> -> 'p -> 'v option
+    //This is a bit of black magic used in allowing IIntervalValue.Split to return its concrete enclosing type
+    //Poor man's dangerous downcast
+    let asi (iiv:IIntervalValue<_,_>) : 'i = 
+        match iiv with
+        | :? 'i as ti -> ti
+        | _ -> failwith "Failed to upcast interval value"
 
+    //TODO use inherited, not directly, so Split returns a properly-typed interval e.g. IFloatValue<_,_>
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with
             member this.At _ _ = this.value
-            member this.Split _ _ = (this :> IIntervalValue<'p,'v>,this :> IIntervalValue<'p,'v>)
+            member this.Split _ _ self = 
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
+                let thisi = asi this
+                (thisi,thisi)
 
     let ConstantValue<'p,'v> v =
         { ConstantValue.value=v } :> IIntervalValue<'p,'v>         
 
-    type Interval<'p,'v> = { startbound:IntervalBoundary<'p>; endbound:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
+
+    type IExtrapolation<'p,'v> =
+        abstract member At: PositionNormalizer<'p> -> 'p -> 'v option
+
+
+    type Interval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = { startbound:IntervalBoundary<'p>; endbound:IntervalBoundary<'p>; value:'i} with
+        member this.ValueAt p = (this.value:> IIntervalValue<'p,'v>).At p
+
+    type NormalizedInterval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = { interval:Interval<'p,'v,'i>; weight:float }
+
+    type SplitInterval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = {before:Interval<'p,'v,'i> option;after:Interval<'p,'v,'i> option}  
     
-    type SplitInterval<'p,'v> = {before:Interval<'p,'v> option;after:Interval<'p,'v> option}  
-    
-    type InterpolationFunction<'p,'v> = Interval<'p,'v> -> 'p -> PointValue<'p,'v>
-    type AggregationFunction<'p,'v> = Interval<'p,'v> seq -> Interval<'p,'v>
+    type InterpolationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> -> 'p -> PointValue<'p,'v>
+    type AggregationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> seq -> Interval<'p,'v,'i>
+
+    type PointSequence<'p, 'v> = { id:string; ptvalues:PointValue<'p,'v> list; extrap:ExtrapolationStrategy; bound:BoundaryStrategy}
+
+    type IntervalSequence<'p, 'v, 'i when 'i :> IIntervalValue<'p,'v>> = { id:string; intvalues:Interval<'p,'v,'i> list; preextrap:IExtrapolation<'p,'v>; postextrap:IExtrapolation<'p,'v> }
+
 
     type Quality = Quality of string //placeholder
     type QualitiedValue<'v> = 'v * Quality list
@@ -137,32 +165,3 @@ module Types =
     // type Weight = Weight of float
     // type SplinePoint<'v> = 'v * Angle * Weight
     // type SplinedValue<'v> = SplinePoint<'v> * SplinePoint<'v> //note: not a LinearValue<SplinePoint<'v>> bc diff. interpretation strategy
-
-    // type IVInterp<'p,'v> =
-    //     abstract member At: 'p -> 'v
-
-    // type FLinterp<'p> = { start:PointValue<'p,float>;endbound:PointValue<'p,float> } with
-    //     interface IVInterp<'p,float> with
-    //         member this.At pt = 42.0    
-
-    // [<CustomEquality;NoComparison>]
-    // type FintInterp =
-    //     inherit ValueInterpolator<int,int>
-    //     override this.Invoke p = 42
-    //     override this.Equals(other) =
-    //         match other with
-    //         | :? FintInterp as tother -> this.Equals(tother)
-    //         | _ -> false
-    //     interface System.IEquatable<FintInterp> with
-    //         member this.Equals other = true; //LOL
-    //TODO move this...
-    let Interpolate (pinterp) (vinterp) (iv:Interval<'p,'v>) (p:'p) : PointValue<'p,'v> =
-        let s = 1.0 * pinterp iv p
-        let v = vinterp iv s
-        {position=p;value=v}    
-
-    // let InterpolateValuePositiveStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-    //     iv.start.value
- 
-    // let InterpolateValueNegativeStep (iv:FiniteIntervalValue<'p,'v>) (scale:float) : 'v =
-    //     iv.endbound.value
