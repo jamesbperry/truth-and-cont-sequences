@@ -45,7 +45,7 @@ module FloatOps =
                 if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,float>).At pn p
                 let pmid = {position=p;value=vmid}
-                (asi {this with pend=pmid},asi {this with pstart=pmid}) ////:> IIntervalValue<'p,float>
+                (asi {this with pend=pmid},asi {this with pstart=pmid})
         interface IFloatValue<'p> with
             member this.Integral pweight = pweight * List.average [this.pstart.value;this.pend.value]
             member this.Min () = min this.pstart.value this.pend.value
