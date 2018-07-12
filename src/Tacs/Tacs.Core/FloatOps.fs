@@ -2,6 +2,7 @@ namespace Tacs.Core
 
 module FloatOps =
 
+    open System
     open Types
 
     let inline ClampScale (v:'a) =
@@ -10,8 +11,11 @@ module FloatOps =
     let FloatPosition (low:float) (high:float) (at:float) =
         ClampScale <| (at - low)/(high - low)           
 
-    let InterpolatePosition (iv:Interval<float,'v>) p : float =
+    let InterpolatePosition (iv:Interval<float,'v,'i>) p : float =
         FloatPosition iv.startbound.position iv.endbound.position p
+
+    let OnFloatPosition unitsize (ints:Interval<float,'v,'i> list) =
+        List.map (fun int -> { interval=int;weight=(int.endbound.position - int.startbound.position) / unitsize}) ints
 
     let InterpolateValueConstant (v:float) (p:'p) =
         v
@@ -21,45 +25,57 @@ module FloatOps =
         let npos = pinterp pti.position ptf.position p
         pti.value + (dv * npos)
 
-    // let Constant<'p> (startpos:IntervalBoundary<'p>) (endpos:IntervalBoundary<'p>) value = //refactor to dedupe
-    //     let interp = InterpolateValueConstant value
-    //     FiniteInterval {start=startpos;endbound=endpos;value=interp};
+    type IFloatValue<'p> =
+        inherit IIntervalValue<'p,float>
+        abstract member Integral: float -> float
+        abstract member Min: unit -> float
+        abstract member Max: unit -> float
+        abstract member Mean: unit -> float
+        abstract member Range: unit -> float
+
+    type FloatValuedInterval<'p> = Interval<'p,float,IFloatValue<'p>>
+    type FloatValuedIntervalsNormalizer<'p> = float->FloatValuedInterval<'p> list->NormalizedInterval<'p,float,IFloatValue<'p>> list
+    type FloatValuedSequence<'p> = IntervalSequence<'p,float,IFloatValue<'p>>
 
     type LinearFloatValue<'p> = 
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
         interface IIntervalValue<'p,float> with
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
-            member this.Split pn p =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,float>).At pn p
                 let pmid = {position=p;value=vmid}
-                ({this with pend=pmid} :> IIntervalValue<'p,float>,{this with pstart=pmid} :> IIntervalValue<'p,float>)
+                (asi {this with pend=pmid},asi {this with pstart=pmid})
+        interface IFloatValue<'p> with
+            member this.Integral pweight = pweight * List.average [this.pstart.value;this.pend.value]
+            member this.Min () = min this.pstart.value this.pend.value
+            member this.Max () = max this.pstart.value this.pend.value
+            member this.Mean () = List.average [this.pstart.value;this.pend.value]
+            member this.Range () = abs <| this.pstart.value - this.pend.value
 
     let LinearFloatValue (pstart,pend) =
-        {pstart=pstart;pend=pend} :> IIntervalValue<'p,float>     
+        {pstart=pstart;pend=pend}
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}      
+        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
 
-    // let Linear<'p> (pinterp:PositionNormalizer<'p>) (startpt:BoundaryValue<'p,float>) (endpt:BoundaryValue<'p,float>) =
-    //     let interp = InterpolateValueLinear pinterp (PointValue.ofBoundary startpt, PointValue.ofBoundary endpt)
-    //     FiniteInterval {start=startpt.position;endbound=endpt.position;value=interp};
-
-    let Integral (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-        failwith "not implemented"
-    
-    let Average (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-        failwith "not implemented"
-
-    let Maximum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
+    let Integral (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        let norms = np 1.0 inseq.intvalues
+        let integs = Seq.map (fun nint -> (nint.interval.value :> IFloatValue<'p>).Integral nint.weight) norms
+        let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
+        List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
+        
+    let Average (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         failwith "not implemented"
 
-    let Minimum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
+    let Maximum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         failwith "not implemented"
 
-    let Stdev (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
+    let Minimum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         failwith "not implemented"
 
-    let ValueRange (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
+    let Stdev (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         failwith "not implemented"
-                      
-                      
+
+    let ValueRange (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
