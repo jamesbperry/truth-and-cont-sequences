@@ -31,19 +31,19 @@ let ``intervals to points should be reversible`` () =
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and float values`` () =
     let inter = FloatOps.LinearFloatInterval ({position=Inclusive 1;value=1.0},{position=Exclusive 100;value=100.0})
-    let pv = inter.value.At IntegerPosition 42
+    let pv = inter.ValueAt IntegerPosition 42
     pv |> should equal 42.0
 
 [<Test>]
 let ``linear interpolation should produce correct value for int positions and int values`` () =
     let inter = LinearNearestIntInterval ({position=Inclusive 1;value=1},{position=Exclusive 100;value=100})
-    let pv = inter.value.At IntegerPosition 42
+    let pv = inter.ValueAt IntegerPosition 42
     pv |> should equal 42
 
 [<Test>]
 let ``linear interpolation should produce correct value for float positions and float values`` () =
     let inter = LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 100.0;value=100.0})
-    let pv = inter.value.At FloatPosition 42.0
+    let pv = inter.ValueAt FloatPosition 42.0
     pv |> should equal 42.0
 
 

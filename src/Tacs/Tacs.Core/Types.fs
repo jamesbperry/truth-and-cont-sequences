@@ -1,5 +1,6 @@
 namespace Tacs.Core
 
+open System
 module Types =
 
     type BoundaryStrategy =
@@ -109,26 +110,38 @@ module Types =
 
     type IIntervalValue<'p,'v> =
         abstract member At: PositionNormalizer<'p> -> 'p -> 'v
-        abstract member Split: PositionNormalizer<'p> -> 'p -> IIntervalValue<'p,'v> * IIntervalValue<'p,'v>
+        abstract member Split: PositionNormalizer<'p> -> 'p -> 'i -> 'i * 'i when 'i :> IIntervalValue<'p,'v>
 
-    type IExtrapolation<'p,'v> =
-        abstract member At: PositionNormalizer<'p> -> 'p -> 'v option
+    let inline asi (iiv:IIntervalValue<_,_>) : 'i = 
+        match iiv with
+        | :? 'i as ti -> ti
+        | _ -> failwith "oops"
 
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with
             member this.At _ _ = this.value
-            member this.Split _ _ = (this :> IIntervalValue<'p,'v>,this :> IIntervalValue<'p,'v>)
+            member this.Split _ _ _ = 
+                let thisi = asi this
+                (thisi,thisi)
 
     let ConstantValue<'p,'v> v =
         { ConstantValue.value=v } :> IIntervalValue<'p,'v>         
 
-    type Interval<'p,'v> = { startbound:IntervalBoundary<'p>; endbound:IntervalBoundary<'p>; value:IIntervalValue<'p,'v>}
+
+    type IExtrapolation<'p,'v> =
+        abstract member At: PositionNormalizer<'p> -> 'p -> 'v option
+
+
+    type Interval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = { startbound:IntervalBoundary<'p>; endbound:IntervalBoundary<'p>; value:'i} with
+        member this.ValueAt p = (this.value:> IIntervalValue<'p,'v>).At p
+
+    type NormalizedInterval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = { interval:Interval<'p,'v,'i>; weight:float }
+
+    type SplitInterval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = {before:Interval<'p,'v,'i> option;after:Interval<'p,'v,'i> option}  
     
-    type SplitInterval<'p,'v> = {before:Interval<'p,'v> option;after:Interval<'p,'v> option}  
-    
-    type InterpolationFunction<'p,'v> = Interval<'p,'v> -> 'p -> PointValue<'p,'v>
-    type AggregationFunction<'p,'v> = Interval<'p,'v> seq -> Interval<'p,'v>
+    type InterpolationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> -> 'p -> PointValue<'p,'v>
+    type AggregationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> seq -> Interval<'p,'v,'i>
 
     type Quality = Quality of string //placeholder
     type QualitiedValue<'v> = 'v * Quality list
