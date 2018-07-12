@@ -80,27 +80,26 @@ module IntegerOps =
                 if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,int>).At pn p
                 let pmid = {position=p;value=vmid}
-                failwith "not implemented"
-                //({this with pend=pmid} :> IIntervalValue<'p,int>,{this with pstart=pmid} :> IIntervalValue<'p,int>)
+                (asi {this with pend=pmid},asi {this with pstart=pmid})
 
     let LinearNearestIntValue (pstart,pend) =
-        {LinearNearestIntValue.pstart=pstart;pend=pend}   
+        {LinearNearestIntValue.pstart=pstart;pend=pend} :> IIntegerValue<'p>  
 
     let LinearFloorIntValue (pstart,pend) =
-        {LinearCeilingIntValue.pstart=pstart;pend=pend}    
+        {LinearCeilingIntValue.pstart=pstart;pend=pend} //TODO  :> IIntegerValue<'p>
 
     let LinearCeilingIntValue (pstart,pend) =
-        {LinearCeilingIntValue.pstart=pstart;pend=pend}
+        {LinearCeilingIntValue.pstart=pstart;pend=pend} //TODO  :> IIntegerValue<'p>
 
     let LinearNearestIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearNearestIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearNearestIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IIntegerValue<'p>}
 
     let LinearFloorIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearFloorIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearFloorIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}} //TODO value :> IIntegerValue<'p> 
   
 
     let LinearCeilingIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}
+        {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}} //TODO value :> IIntegerValue<'p> 
                 
     //Integer
     // let Integral (inseq:Interval<'a,int> seq) : (Interval<'a,int>) =

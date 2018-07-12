@@ -50,10 +50,10 @@ module FloatOps =
             member this.Range () = abs <| this.pstart.value - this.pend.value
 
     let LinearFloatValue (pstart,pend) =
-        {pstart=pstart;pend=pend}   
+        {pstart=pstart;pend=pend}
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}      
+        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
 
 
     // type 

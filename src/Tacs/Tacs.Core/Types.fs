@@ -125,6 +125,7 @@ module Types =
         | :? 'i as ti -> ti
         | _ -> failwith "Failed to upcast interval value"
 
+    //TODO use inherited, not directly, so Split returns a properly-typed interval e.g. IFloatValue<_,_>
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with

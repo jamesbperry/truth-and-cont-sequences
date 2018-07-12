@@ -38,7 +38,7 @@ module TimeOps =
         {LinearTimeValue.pstart=pstart;pend=pend}
 
     let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}} 
+        {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}  //value :> ITimeValue<_> //TODO
 
     //DateTimeOffset
     // let Integrate (inseq:Interval<'a,DateTimeOffset> seq) : (Interval<'a,DateTimeOffset>) =
