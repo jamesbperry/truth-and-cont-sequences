@@ -2,6 +2,7 @@ namespace Tacs.Core
 
 module IntegerOps =
 
+    open System
     open Types
 
     let inline ClampScale (v:'a) =
@@ -49,7 +50,8 @@ module IntegerOps =
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearNearest pn (this.pstart, this.pend) p
-            member this.Split pn p _ =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,int>).At pn p
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
@@ -64,7 +66,8 @@ module IntegerOps =
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearFloor pn (this.pstart, this.pend) p
-            member this.Split pn p _ =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,int>).At pn p
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
@@ -73,7 +76,8 @@ module IntegerOps =
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
         interface IIntervalValue<'p,int> with
             member this.At pn p = InterpolateValueLinearCeiling pn (this.pstart, this.pend) p
-            member this.Split pn p _ =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,int>).At pn p
                 let pmid = {position=p;value=vmid}
                 failwith "not implemented"

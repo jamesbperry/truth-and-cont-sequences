@@ -2,8 +2,8 @@ namespace Tacs.Core
 
 module TimeOps =
 
-    open Types
     open System
+    open Types
 
     let inline ClampScale (v:'a) =
         min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
@@ -28,13 +28,14 @@ module TimeOps =
         {pstart:PointValue<'p,DateTimeOffset>;pend:PointValue<'p,DateTimeOffset>} with
         interface IIntervalValue<'p,DateTimeOffset> with
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
-            member this.Split pn p _ =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,DateTimeOffset>).At pn p
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
 
     let LinearTimeValue (pstart,pend) =
-        {LinearTimeValue.pstart=pstart;pend=pend} :> IIntervalValue<'p,DateTimeOffset>  
+        {LinearTimeValue.pstart=pstart;pend=pend}
 
     let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
         {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}} 

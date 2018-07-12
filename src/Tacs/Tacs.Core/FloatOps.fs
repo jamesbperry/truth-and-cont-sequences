@@ -2,6 +2,7 @@ namespace Tacs.Core
 
 module FloatOps =
 
+    open System
     open Types
 
     let inline ClampScale (v:'a) =
@@ -36,7 +37,8 @@ module FloatOps =
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
         interface IIntervalValue<'p,float> with
             member this.At pn p = InterpolateValueLinear pn (this.pstart, this.pend) p
-            member this.Split pn p _ =
+            member this.Split pn p self =
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let vmid = (this :> IIntervalValue<'p,float>).At pn p
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid}) ////:> IIntervalValue<'p,float>

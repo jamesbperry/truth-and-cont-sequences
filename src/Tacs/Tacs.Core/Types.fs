@@ -108,20 +108,29 @@ module Types =
     type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
     type ValueInterpolator<'p,'v> = 'p -> 'v
 
+    //We want .Split to return ('concrete*'concrete). 
+    //But F# lacks direct covariance and has a few other constraints, so it seems this is not possible in straightforward ways. 
+    //Generic type constraints to interfaces do behave covariantly, though. We will abuse those.
+    //By passing in a concrete IIntervalValue implementation as an argument to its own .Split instance, we capture its type as a 'generic constrained to implement IIntervalValue.
+    //The concrete type becomes the return type of .Split, and after using a type match wrapped in a generic function to convert the output,
+    //Voilà, covariance.
     type IIntervalValue<'p,'v> =
         abstract member At: PositionNormalizer<'p> -> 'p -> 'v
         abstract member Split: PositionNormalizer<'p> -> 'p -> 'i -> 'i * 'i when 'i :> IIntervalValue<'p,'v>
 
-    let inline asi (iiv:IIntervalValue<_,_>) : 'i = 
+    //This is a bit of black magic used in allowing IIntervalValue.Split to return its concrete enclosing type
+    //Poor man's dangerous downcast
+    let asi (iiv:IIntervalValue<_,_>) : 'i = 
         match iiv with
         | :? 'i as ti -> ti
-        | _ -> failwith "oops"
+        | _ -> failwith "Failed to upcast interval value"
 
     type ConstantValue<'p,'v> =
         { value: 'v }
         interface IIntervalValue<'p,'v> with
             member this.At _ _ = this.value
-            member this.Split _ _ _ = 
+            member this.Split _ _ self = 
+                if not <| Object.ReferenceEquals (self,this) then invalidArg "self" "Pass the object itself as the third argument to its own Split() function. Yes, this is weird."
                 let thisi = asi this
                 (thisi,thisi)
 
