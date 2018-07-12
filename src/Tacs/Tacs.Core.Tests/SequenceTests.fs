@@ -354,3 +354,17 @@ let ``unextrapolated unevenly-spaced ceiling-integer integral should produce acc
         LinearFloatInterval ({position=Inclusive 1;value=1.5},{position=Exclusive 2;value=3.5});
         LinearFloatInterval ({position=Inclusive 2;value=3.5},{position=Inclusive 4;value=6.5});]
     Array.ofList integvals |> should equal expectedvals  
+
+[<Test>]
+let ``unextrapolated unevenly-spaced mixed-behavior integer integral should produce accurate results`` () =
+    let inpvals = [
+        LinearCeilingIntInterval ({position=Inclusive 0;value=0},{position=Exclusive 2;value=2});       
+        LinearFloorIntInterval ({position=Inclusive 2;value=2},{position=Exclusive 5;value=7});
+        LinearNearestIntInterval ({position=Inclusive 5;value=7},{position=Inclusive 9;value=1});]
+    let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
+    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let expectedvals = [
+        LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 2;value=3.0});    
+        LinearFloatInterval ({position=Inclusive 2;value=3.0},{position=Exclusive 5;value=15.0});
+        LinearFloatInterval ({position=Inclusive 5;value=15.0},{position=Inclusive 9;value=31.0});]
+    Array.ofList integvals |> should equal expectedvals  

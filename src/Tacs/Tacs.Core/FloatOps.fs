@@ -59,23 +59,23 @@ module FloatOps =
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
         {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
 
-    let Integral (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+    let Aggregate (np:FloatValuedIntervalsNormalizer<'p>) op (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> (nint.interval.value :> IFloatValue<'p>).Integral nint.weight) norms
+        let integs = Seq.map (fun nint -> op nint) norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
-        
-    let Average (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        failwith "not implemented"
+
+    let Integral (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        Aggregate np (fun nint -> nint.interval.value.Integral nint.weight) inseq
+
+    let Mean (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        Aggregate np (fun nint -> nint.interval.value.Mean ()) inseq
 
     let Maximum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        failwith "not implemented"
+        Aggregate np (fun nint -> nint.interval.value.Max ()) inseq
 
     let Minimum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        failwith "not implemented"
+        Aggregate np (fun nint -> nint.interval.value.Min ()) inseq
 
-    let Stdev (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        failwith "not implemented"
-
-    let ValueRange (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        failwith "not implemented"
+    let Range (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        Aggregate np (fun nint -> nint.interval.value.Range ()) inseq
