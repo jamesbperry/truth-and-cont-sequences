@@ -234,3 +234,33 @@ let ``overflowing backward inside slice should produce correct subsequence`` () 
     let subseq = sliceBackwardByCount FloatPosition slstrat fullseq
     let expectedvals = allvals
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)
+
+[<Test>]
+let ``unextrapolated evenly-spaced float integral should produce accurate results`` () =
+    let inpvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=2.0});   // linear 2*x^2     
+        LinearFloatInterval ({position=Inclusive 1.0;value=2.0},{position=Exclusive 2.0;value=8.0});
+        LinearFloatInterval ({position=Inclusive 2.0;value=8.0},{position=Exclusive 3.0;value=18.0});
+        LinearFloatInterval ({position=Inclusive 3.0;value=18.0},{position=Inclusive 4.0;value=32.0});]
+    let inpseq:FloatValuedSequence<float> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
+    let integvals  = FloatOps.Integral OnFloatPosition inpseq
+    let expectedvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=1.0});    
+        LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=6.0});
+        LinearFloatInterval ({position=Inclusive 2.0;value=6.0},{position=Exclusive 3.0;value=19.0});
+        LinearFloatInterval ({position=Inclusive 3.0;value=19.0},{position=Inclusive 4.0;value=44.0});]
+    Array.ofList integvals |> should equal expectedvals  
+
+[<Test>]
+let ``unextrapolated unevenly-spaced float integral should produce accurate results`` () =
+    let inpvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=2.0});   // linear 2*x^2     
+        LinearFloatInterval ({position=Inclusive 1.0;value=2.0},{position=Exclusive 2.0;value=8.0});
+        LinearFloatInterval ({position=Inclusive 2.0;value=8.0},{position=Inclusive 4.0;value=32.0});]
+    let inpseq:FloatValuedSequence<float> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
+    let integvals  = FloatOps.Integral OnFloatPosition inpseq
+    let expectedvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=1.0});    
+        LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=6.0});
+        LinearFloatInterval ({position=Inclusive 2.0;value=6.0},{position=Inclusive 4.0;value=46.0});]
+    Array.ofList integvals |> should equal expectedvals  

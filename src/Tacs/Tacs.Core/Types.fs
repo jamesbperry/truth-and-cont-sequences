@@ -153,6 +153,11 @@ module Types =
     type InterpolationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> -> 'p -> PointValue<'p,'v>
     type AggregationFunction<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> = Interval<'p,'v,'i> seq -> Interval<'p,'v,'i>
 
+    type PointSequence<'p, 'v> = { id:string; ptvalues:PointValue<'p,'v> list; extrap:ExtrapolationStrategy; bound:BoundaryStrategy}
+
+    type IntervalSequence<'p, 'v, 'i when 'i :> IIntervalValue<'p,'v>> = { id:string; intvalues:Interval<'p,'v,'i> list; preextrap:IExtrapolation<'p,'v>; postextrap:IExtrapolation<'p,'v> }
+
+
     type Quality = Quality of string //placeholder
     type QualitiedValue<'v> = 'v * Quality list
 

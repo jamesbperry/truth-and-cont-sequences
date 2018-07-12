@@ -14,7 +14,7 @@ module FloatOps =
     let InterpolatePosition (iv:Interval<float,'v,'i>) p : float =
         FloatPosition iv.startbound.position iv.endbound.position p
 
-    let NormalizePositions unitsize (ints:Interval<float,'v,'i> list) =
+    let OnFloatPosition unitsize (ints:Interval<float,'v,'i> list) =
         List.map (fun int -> { interval=int;weight=(int.endbound.position - int.startbound.position) / unitsize}) ints
 
     let InterpolateValueConstant (v:float) (p:'p) =
@@ -32,6 +32,10 @@ module FloatOps =
         abstract member Max: unit -> float
         abstract member Mean: unit -> float
         abstract member Range: unit -> float
+
+    type FloatValuedInterval<'p> = Interval<'p,float,IFloatValue<'p>>
+    type FloatValuedIntervalsNormalizer<'p> = float->FloatValuedInterval<'p> list->NormalizedInterval<'p,float,IFloatValue<'p>> list
+    type FloatValuedSequence<'p> = IntervalSequence<'p,float,IFloatValue<'p>>
 
     type LinearFloatValue<'p> = 
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
@@ -55,32 +59,23 @@ module FloatOps =
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
         {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
 
+    let Integral (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        let norms = np 1.0 inseq.intvalues
+        let integs = Seq.map (fun nint -> (nint.interval.value :> IFloatValue<'p>).Integral nint.weight) norms
+        let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
+        List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
+        
+    let Average (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
 
-    // type 
-    //     let Integral<'p,'v> (iseq:IntervalSequence<'p,'v>) = pweight * List.average [this.pstart.value;this.pend.value]
-    //     let Min () = failwith "not implemented"
-    //     let Max () = failwith "not implemented"
-    //     let Mean () = failwith "not implemented"
-    //     let Range () = failwith "not implemented"
+    let Maximum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
 
-    // let integral (np:Interval<'p,float> list->NormalizedInterval<'p,float> list) (ints:Interval<'p,float> list) =
-    //     let nints = np 1.0 ints
-    //     let tints = List.map (fun nint -> )
+    let Minimum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
 
-    // let Integral (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
-    
-    // let Average (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
+    let Stdev (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
 
-    // let Maximum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
-
-    // let Minimum (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
-
-    // let Stdev (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
-
-    // let ValueRange (inseq:Interval<'a,float> seq) : (Interval<'a,float>) =
-    //     failwith "not implemented"
+    let ValueRange (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        failwith "not implemented"
