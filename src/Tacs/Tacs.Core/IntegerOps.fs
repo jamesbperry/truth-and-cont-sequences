@@ -43,7 +43,7 @@ module IntegerOps =
 
     type IIntegerValue<'p> =
         inherit IIntervalValue<'p,int>
-        abstract member Integral: float -> float
+        abstract member Total: float -> float
         abstract member Min: unit -> int
         abstract member Max: unit -> int
         abstract member Mean: unit -> float
@@ -52,6 +52,23 @@ module IntegerOps =
     type IntValuedInterval<'p> = Interval<'p,int,IIntegerValue<'p>>
     type IntValuedIntervalsNormalizer<'p> = float->IntValuedInterval<'p> list->NormalizedInterval<'p,int,IIntegerValue<'p>> list
     type IntValuedSequence<'p> = IntervalSequence<'p,int,IIntegerValue<'p>>
+
+    type ConstantIntValue<'p> =
+        {constantvalue:int} with
+        interface IIntervalValue<'p,int> with
+            member this.At _ _ = this.constantvalue
+            member this.Split _ _ _ = (asi this,asi this)
+        interface IIntegerValue<'p> with
+            member this.Total pweight = pweight * float this.constantvalue
+            member this.Min () = this.constantvalue
+            member this.Max () = this.constantvalue
+            member this.Mean () = float this.constantvalue
+            member __.Range () = 0   
+    
+    let ConstantIntValue (value) = {constantvalue=value}
+
+    let ConstantIntInterval (startb:IntervalBoundary<'p>,endb:IntervalBoundary<'p>) value =
+        {startbound=startb;endbound=endb;value={ConstantIntValue.constantvalue=value} :> IIntegerValue<_>}
 
     type LinearNearestIntValue<'p> = 
         {pstart:PointValue<'p,int>;pend:PointValue<'p,int>} with
@@ -63,7 +80,7 @@ module IntegerOps =
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
         interface IIntegerValue<'p> with
-            member this.Integral pweight = pweight * List.average [float this.pstart.value;float this.pend.value]
+            member this.Total pweight = pweight * List.average [float this.pstart.value;float this.pend.value]
             member this.Min () = min this.pstart.value this.pend.value
             member this.Max () = max this.pstart.value this.pend.value
             member this.Mean () = List.average [float this.pstart.value;float this.pend.value]
@@ -80,7 +97,7 @@ module IntegerOps =
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
         interface IIntegerValue<'p> with
-            member this.Integral pweight = pweight * this._Mean ()
+            member this.Total pweight = pweight * this._Mean ()
             member this.Min () = min this.pstart.value this.pend.value
             member this.Max () = max this.pstart.value this.pend.value
             member this.Mean () = this._Mean ()
@@ -97,7 +114,7 @@ module IntegerOps =
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
         interface IIntegerValue<'p> with
-            member this.Integral pweight = pweight * this._Mean ()
+            member this.Total pweight = pweight * this._Mean ()
             member this.Min () = min this.pstart.value this.pend.value
             member this.Max () = max this.pstart.value this.pend.value
             member this.Mean () = this._Mean ()
@@ -133,8 +150,8 @@ module IntegerOps =
         let runningpairs = Seq.scan (+) 0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearNearestIntInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
     
-    let Integral (np:IntValuedIntervalsNormalizer<'p>) (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
-        AggregateToFloat np (fun nint -> nint.interval.value.Integral nint.weight) inseq
+    let Total (np:IntValuedIntervalsNormalizer<'p>) (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
+        AggregateToFloat np (fun nint -> nint.interval.value.Total nint.weight) inseq
 
     let Mean (np:IntValuedIntervalsNormalizer<'p>) (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
         AggregateToFloat np (fun nint -> nint.interval.value.Mean ()) inseq

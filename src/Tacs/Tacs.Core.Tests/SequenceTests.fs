@@ -243,7 +243,7 @@ let ``unextrapolated evenly-spaced float integral should produce accurate result
         LinearFloatInterval ({position=Inclusive 2.0;value=8.0},{position=Exclusive 3.0;value=18.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=18.0},{position=Inclusive 4.0;value=32.0});]
     let inpseq:FloatValuedSequence<float> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = FloatOps.Integral OnFloatPosition inpseq
+    let integvals  = FloatOps.Total OnFloatPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=1.0});    
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=6.0});
@@ -252,17 +252,31 @@ let ``unextrapolated evenly-spaced float integral should produce accurate result
     Array.ofList integvals |> should equal expectedvals  
 
 [<Test>]
-let ``unextrapolated unevenly-spaced float integral should produce accurate results`` () =
+let ``unextrapolated unevenly-spaced linear float integral should produce accurate results`` () =
     let inpvals = [
         LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=2.0});   // linear 2*x^2     
         LinearFloatInterval ({position=Inclusive 1.0;value=2.0},{position=Exclusive 2.0;value=8.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=8.0},{position=Inclusive 4.0;value=32.0});]
     let inpseq:FloatValuedSequence<float> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = FloatOps.Integral OnFloatPosition inpseq
+    let integvals  = FloatOps.Total OnFloatPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=1.0});    
         LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=6.0});
         LinearFloatInterval ({position=Inclusive 2.0;value=6.0},{position=Inclusive 4.0;value=46.0});]
+    Array.ofList integvals |> should equal expectedvals  
+
+[<Test>]
+let ``unextrapolated unevenly-spaced mixed-behavior float integral should produce accurate results`` () =
+    let inpvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=2.0});   // linear 2*x^2     
+        LinearFloatInterval ({position=Inclusive 1.0;value=2.0},{position=Exclusive 2.0;value=8.0});
+        ConstantFloatInterval (Inclusive 2.0,Inclusive 4.0) 8.0;]
+    let inpseq:FloatValuedSequence<float> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
+    let integvals  = FloatOps.Total OnFloatPosition inpseq
+    let expectedvals = [
+        LinearFloatInterval ({position=Inclusive 0.0;value=0.0},{position=Exclusive 1.0;value=1.0});    
+        LinearFloatInterval ({position=Inclusive 1.0;value=1.0},{position=Exclusive 2.0;value=6.0});
+        LinearFloatInterval ({position=Inclusive 2.0;value=6.0},{position=Inclusive 4.0;value=22.0});]
     Array.ofList integvals |> should equal expectedvals  
 
 [<Test>]
@@ -273,7 +287,7 @@ let ``unextrapolated evenly-spaced nearest-integer integral should produce accur
         LinearNearestIntInterval ({position=Inclusive 2;value=8},{position=Exclusive 3;value=18});
         LinearNearestIntInterval ({position=Inclusive 3;value=18},{position=Inclusive 4;value=32});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=1.0});    
         LinearFloatInterval ({position=Inclusive 1;value=1.0},{position=Exclusive 2;value=6.0});
@@ -288,7 +302,7 @@ let ``unextrapolated unevenly-spaced nearest-integer integral should produce acc
         LinearNearestIntInterval ({position=Inclusive 1;value=2},{position=Exclusive 2;value=8});
         LinearNearestIntInterval ({position=Inclusive 2;value=8},{position=Inclusive 4;value=32});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=1.0});    
         LinearFloatInterval ({position=Inclusive 1;value=1.0},{position=Exclusive 2;value=6.0});
@@ -303,7 +317,7 @@ let ``unextrapolated evenly-spaced floor-integer integral should produce accurat
         LinearFloorIntInterval ({position=Inclusive 2;value=2},{position=Exclusive 3;value=4});
         LinearFloorIntInterval ({position=Inclusive 3;value=4},{position=Inclusive 4;value=0});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=0.5});    
         LinearFloatInterval ({position=Inclusive 1;value=0.5},{position=Exclusive 2;value=2.5});
@@ -318,7 +332,7 @@ let ``unextrapolated unevenly-spaced floor-integer integral should produce accur
         LinearFloorIntInterval ({position=Inclusive 1;value=2},{position=Exclusive 2;value=2});
         LinearFloorIntInterval ({position=Inclusive 2;value=2},{position=Inclusive 4;value=0});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=0.5});    
         LinearFloatInterval ({position=Inclusive 1;value=0.5},{position=Exclusive 2;value=2.5});
@@ -333,7 +347,7 @@ let ``unextrapolated evenly-spaced ceiling-integer integral should produce accur
         LinearCeilingIntInterval ({position=Inclusive 2;value=2},{position=Exclusive 3;value=4});
         LinearCeilingIntInterval ({position=Inclusive 3;value=4},{position=Inclusive 4;value=0});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=1.5});    
         LinearFloatInterval ({position=Inclusive 1;value=1.5},{position=Exclusive 2;value=3.5});
@@ -348,7 +362,7 @@ let ``unextrapolated unevenly-spaced ceiling-integer integral should produce acc
         LinearCeilingIntInterval ({position=Inclusive 1;value=2},{position=Exclusive 2;value=2});
         LinearCeilingIntInterval ({position=Inclusive 2;value=2},{position=Inclusive 4;value=0});]
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 1;value=1.5});    
         LinearFloatInterval ({position=Inclusive 1;value=1.5},{position=Exclusive 2;value=3.5});
@@ -360,11 +374,13 @@ let ``unextrapolated unevenly-spaced mixed-behavior integer integral should prod
     let inpvals = [
         LinearCeilingIntInterval ({position=Inclusive 0;value=0},{position=Exclusive 2;value=2});       
         LinearFloorIntInterval ({position=Inclusive 2;value=2},{position=Exclusive 5;value=7});
-        LinearNearestIntInterval ({position=Inclusive 5;value=7},{position=Inclusive 9;value=1});]
+        LinearNearestIntInterval ({position=Inclusive 5;value=7},{position=Exclusive 9;value=1});
+        ConstantIntInterval (Inclusive 9,Inclusive 11) 2 ];
     let inpseq:IntValuedSequence<int> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let integvals  = IntegerOps.Integral OnIntPosition inpseq
+    let integvals  = IntegerOps.Total OnIntPosition inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 0;value=0.0},{position=Exclusive 2;value=3.0});    
         LinearFloatInterval ({position=Inclusive 2;value=3.0},{position=Exclusive 5;value=15.0});
-        LinearFloatInterval ({position=Inclusive 5;value=15.0},{position=Inclusive 9;value=31.0});]
-    Array.ofList integvals |> should equal expectedvals  
+        LinearFloatInterval ({position=Inclusive 5;value=15.0},{position=Exclusive 9;value=31.0});
+        LinearFloatInterval ({position=Inclusive 9;value=31.0},{position=Inclusive 11;value=35.0});]
+    Array.ofList integvals |> should equal expectedvals

@@ -27,7 +27,7 @@ module FloatOps =
 
     type IFloatValue<'p> =
         inherit IIntervalValue<'p,float>
-        abstract member Integral: float -> float
+        abstract member Total: float -> float
         abstract member Min: unit -> float
         abstract member Max: unit -> float
         abstract member Mean: unit -> float
@@ -36,6 +36,23 @@ module FloatOps =
     type FloatValuedInterval<'p> = Interval<'p,float,IFloatValue<'p>>
     type FloatValuedIntervalsNormalizer<'p> = float->FloatValuedInterval<'p> list->NormalizedInterval<'p,float,IFloatValue<'p>> list
     type FloatValuedSequence<'p> = IntervalSequence<'p,float,IFloatValue<'p>>
+
+    type ConstantFloatValue<'p> =
+        {constantvalue:float} with
+        interface IIntervalValue<'p,float> with
+            member this.At _ _ = this.constantvalue
+            member this.Split _ _ _ = (asi this,asi this)
+        interface IFloatValue<'p> with
+            member this.Total pweight = pweight * this.constantvalue
+            member this.Min () = this.constantvalue
+            member this.Max () = this.constantvalue
+            member this.Mean () = this.constantvalue
+            member __.Range () = 0.0   
+    
+    let ConstantFloatValue (value) = {constantvalue=value}
+
+    let ConstantFloatInterval (startb:IntervalBoundary<'p>,endb:IntervalBoundary<'p>) value =
+        {startbound=startb;endbound=endb;value={ConstantFloatValue.constantvalue=value} :> IFloatValue<_>}      
 
     type LinearFloatValue<'p> = 
         {pstart:PointValue<'p,float>;pend:PointValue<'p,float>} with
@@ -47,7 +64,7 @@ module FloatOps =
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
         interface IFloatValue<'p> with
-            member this.Integral pweight = pweight * List.average [this.pstart.value;this.pend.value]
+            member this.Total pweight = pweight * List.average [this.pstart.value;this.pend.value]
             member this.Min () = min this.pstart.value this.pend.value
             member this.Max () = max this.pstart.value this.pend.value
             member this.Mean () = List.average [this.pstart.value;this.pend.value]
@@ -65,8 +82,8 @@ module FloatOps =
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
 
-    let Integral (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Integral nint.weight) inseq
+    let Total (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        Aggregate np (fun nint -> nint.interval.value.Total nint.weight) inseq
 
     let Mean (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         Aggregate np (fun nint -> nint.interval.value.Mean ()) inseq
