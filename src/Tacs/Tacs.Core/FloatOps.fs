@@ -78,6 +78,7 @@ module FloatOps =
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
         {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
 
+    //// This is an experiment that has been put on the back burner
     // type PiecewiseFloatValue<'p when 'p : comparison> =
     //     {segments:FloatValuedInterval<'p> list} with
     //     member private this._AsSequence () = {id="__";intvalues=this.segments;preextrap=Sequence.NoExtrapolation ();postextrap=Sequence.NoExtrapolation ()}
@@ -105,7 +106,7 @@ module FloatOps =
 
     let Aggregate (np:FloatValuedIntervalsNormalizer<'p>) op (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> op nint) norms
+        let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (_,ev) -> ConstantFloatInterval (i.startbound,i.endbound) ev) inseq.intvalues runningpairs
 

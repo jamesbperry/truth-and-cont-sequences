@@ -3,10 +3,6 @@ namespace Tacs.Core
 module Sequence =
 
     open Types
-    let ConstantInterval<'p,'v,'i> sbound ebound v = {startbound=sbound;endbound=ebound;value=ConstantValue v}
-
-    let Instant (pos:'p) (v:'v) = {startbound=Inclusive pos;endbound=Inclusive pos;value=ConstantValue v} //TODO clamp value to normalized
-    
     let pointPairToInterval<'p,'v,'i when 'i :> IIntervalValue<'p,'v>> (interp:(PointValue<'p,'v>*PointValue<'p,'v>)->'i) (startIncl) (endIncl) ptpair : Interval<'p,'v,'i> =
             let (sp:PointValue<'p, 'v>, ep:PointValue<'p,'v>) = ptpair
             let iv = interp ptpair
@@ -20,17 +16,8 @@ module Sequence =
                 | AsExclusive -> Exclusive ep.position
             {startbound=sb;endbound=eb; value=iv}
 
-    let inline isBeforeBoundary (b:IntervalBoundary<'p>) (p:'p) =
-        // match b with
-        // | Inclusive i -> p < i
-        // | Exclusive e -> p <= e
-        p < b.position
-
-    let inline isAfterBoundary (b:IntervalBoundary<'p>) (p:'p) = 
-        // match b with
-        // | Inclusive i -> p > i
-        // | Exclusive e -> p >= e
-        p > b.position
+    let inline isBeforeBoundary (b:IntervalBoundary<'p>) (p:'p) = p < b.position
+    let inline isAfterBoundary (b:IntervalBoundary<'p>) (p:'p) = p > b.position
 
     let invertBound (b:IntervalBoundary<'p>) =
         match b with
@@ -377,3 +364,15 @@ module Sequence =
     //     let vals = List.collect (fun s -> s.intvalues) aggs
     //     {inseq with intvalues=vals}
 
+    let sample pn (samp:Sample<'p,'dp>) (inseq:IntervalSequence<'p,'v,'i>) : (PointValue<'p,'v> option list) =
+        match samp with
+        | SampleAt p -> [getPointInSequence inseq pn p] //Option.defaultValue [] <| Option.bind (fun p -> Some [p]) (getPointInSequence inseq pn p)
+        | SamplesAt pl -> List.map (fun p -> getPointInSequence inseq pn p) pl //TODO do efficiently, this is O(mn)
+        | SampleIntervals (size,anc) -> failwith "not implemented"
+
+(*
+    EOD thoughts:
+    - windowing needs look directions, sliding/hopping, and byCount for tumbling
+    - sampling needs intervals and tests for sample(s)at
+    - TimeValue needs to be brought into the 21st century, i.e. implement data interfaces
+*)    

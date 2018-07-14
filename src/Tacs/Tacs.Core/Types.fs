@@ -76,9 +76,9 @@ module Types =
         | Windowed of Windowing<'p,'dp>
 
     type Sample<'p,'dp> =
-        | Point of 'p
-        | Points of 'p list
-        | Intervals of IntervalSize<'dp> * Anchor<'p>
+        | SampleAt of 'p
+        | SamplesAt of 'p list
+        | SampleIntervals of IntervalSize<'dp> * Anchor<'p>
 
     // type Operations<'p> =
     //     | Remodel of Remodel
@@ -87,11 +87,6 @@ module Types =
     //     | Sample of Sample<'p,'dp>
     //     | Compress of Compress<'a>
 
-    type InterpolationStrategy =
-        | Step
-        | Linear
-
-    //[<RequireQualifiedAccess>]
     type ExtrapolationStrategy =
         | NoExtrapolation
         | BeforeFirst
@@ -112,7 +107,7 @@ module Types =
     type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
     type ValueInterpolator<'p,'v> = 'p -> 'v
 
-    //We want .Split to return ('concrete*'concrete). 
+    //We want .Split to return ('Tconcrete * 'Tconcrete). 
     //But F# lacks direct covariance and has a few other constraints, so it seems this is not possible in straightforward ways. 
     //Generic type constraints to interfaces do behave covariantly, though. We will abuse those.
     //By passing in a concrete IIntervalValue implementation as an argument to its own .Split instance, we capture its type as a 'generic constrained to implement IIntervalValue.

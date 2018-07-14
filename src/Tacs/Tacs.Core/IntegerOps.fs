@@ -140,13 +140,13 @@ module IntegerOps =
                 
     let AggregateToFloat (np:IntValuedIntervalsNormalizer<'p>) op (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> op nint) norms
+        let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (_,ev) -> FloatOps.ConstantFloatInterval (i.startbound,i.endbound) ev) inseq.intvalues runningpairs
 
     let AggregateToInt (np:IntValuedIntervalsNormalizer<'p>) op (inseq:IntValuedSequence<'p>) : IntValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> op nint) norms
+        let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (_,ev) -> ConstantIntInterval (i.startbound, i.endbound) ev) inseq.intvalues runningpairs
     
