@@ -274,7 +274,6 @@ module Sequence =
             | Intersected -> List.takeWhile (fun v -> not <| intervalStartsAfter (b) v) inseq.intvalues
             | Interpolated -> 
                 let wintersect = List.takeWhile (fun v -> not <| intervalStartsAfter (b) v) inseq.intvalues
-                printfn "%A\n\n" wintersect
                 let lastopt = List.tryLast wintersect
                 match lastopt with
                 | Some last ->
@@ -296,12 +295,10 @@ module Sequence =
             match s.start with
             | Some start -> getIntervalsAtAndAfter inseq start.strategy pn start.boundary
             | None -> inseq.intvalues  
-        //printfn "%A\n\n" strim
         let etrim =
             match s.endbound with
             | Some eb -> getIntervalsAtAndBefore {inseq with intvalues=strim} eb.strategy pn eb.boundary
-            | None -> strim      
-        //printfn "hello\n\n%A\n\n" etrim        
+            | None -> strim           
         {inseq with intvalues=etrim}
 
     let sliceByBoundariesInterpolated pn (startb,endb) inseq =
@@ -351,9 +348,7 @@ module Sequence =
             | LookingForward -> (Inclusive s, Exclusive e)
             | LookingBackward -> (Exclusive s, Inclusive e)
 
-        let foo = positions |> List.map (asWindow wd)
-        printf "%A\n\n" foo
-        foo
+        positions |> List.map (asWindow wd)
 
     let inline windowTumbling pn (a:Anchor<'p>) (wd:WindowingDirection) (is:IntervalSize<'dp>) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) =
         let dp = 

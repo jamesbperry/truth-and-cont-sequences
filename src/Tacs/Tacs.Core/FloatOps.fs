@@ -107,7 +107,7 @@ module FloatOps =
         let norms = np 1.0 inseq.intvalues
         let integs = Seq.map (fun nint -> op nint) norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
-        List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
+        List.ofSeq <| Seq.map2 (fun i (_,ev) -> ConstantFloatInterval (i.startbound,i.endbound) ev) inseq.intvalues runningpairs
 
     let Total (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         Aggregate np (fun nint -> nint.interval.value.Total nint.weight) inseq
