@@ -11,6 +11,10 @@ module TimeOps =
     let TimePosition (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
         ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
+    let OnTimePosition (unitsize:float) (ints:Interval<DateTimeOffset,'v,'i> list) =
+        let weight (int:Interval<DateTimeOffset,'v,'i>) u = float (int.endbound.position.Ticks - int.startbound.position.Ticks) / u
+        List.map (fun (int:Interval<DateTimeOffset,'v,'i>) -> { interval=int;weight=weight int unitsize}) ints
+
     let InterpolatePosition (iv:Interval<DateTimeOffset,'v,_>) p : float =
         TimePosition iv.startbound.position iv.endbound.position p
 

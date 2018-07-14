@@ -8,21 +8,27 @@ module Types =
         | InclusiveHigh
 
     type Inclusivity =
-        | IsInclusive
-        | IsExclusive
+        | AsInclusive
+        | AsExclusive
 
     type IntervalBoundary<'p> =
         | Inclusive of 'p
         | Exclusive of 'p
-        member self.position =
-            match self with
+        static member private PositionOf ib =
+            match ib with
             | Inclusive i -> i
-            | Exclusive e -> e      
+            | Exclusive e -> e
+        member self.position = IntervalBoundary<_>.PositionOf self
+        static member (=@=) (x,y) =
+            
+            let xp = IntervalBoundary<_>.PositionOf x
+            let yp = IntervalBoundary<_>.PositionOf y
+            Object.Equals (xp,yp)
 
     type SliceStrategy = 
-        | Inside //Exclusive
-        | Interpolated
-        | Intersected //Inclusive
+        | Inside
+        | Interpolated 
+        | Intersected
 
     type RemodelAnchor =
         | IntervalStart
@@ -33,9 +39,9 @@ module Types =
         | ToPoints
         | ToIntervals
 
-    type SliceBoundary<'p> = { position:'p; strategy:SliceStrategy }
+    type SliceBoundary<'p> = { boundary:IntervalBoundary<'p>; strategy:SliceStrategy }
 
-    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; endbound:SliceBoundary<'p> option; }
+    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; endbound:SliceBoundary<'p> option; } //smells
     type ForwardSlice<'p> = { start:SliceBoundary<'p>; count:int; }
     type BackwardSlice<'p> = {count:int; endbound:SliceBoundary<'p>; }
 
@@ -48,29 +54,26 @@ module Types =
         | Width of 'dp
         | Count of int
 
+    type Anchor<'p> =
+        | Start //TODO rename to FromStart. My dotnet build is throwing a fit at time fo writing this comment
+        | FromEnd
+        | FromPosition of 'p
+
+    type WindowingDirection =
+        | LookingForward
+        | LookingBackward
+
     type HoppingWindowing<'dp> = { size:IntervalSize<'dp>; hop:IntervalSize<'dp> }
 
-    type Windowing<'dp> =
+    type Windowing<'p,'dp> =
         | Single
-        | Sliding of IntervalSize<'dp>
-        | Hopping of HoppingWindowing<'dp>
+        | Tumbling of Anchor<'p> * WindowingDirection * IntervalSize<'dp>
+        | Sliding of Anchor<'p> * WindowingDirection * IntervalSize<'dp>
+        | Hopping of Anchor<'p> * WindowingDirection * HoppingWindowing<'dp>
 
-    type AggregationOperation = //TODO remove. types define their own aggregators!
-        | NoOp
-        | Custom of string
-        | Integral
-        | Avg
-        | Max
-        | Min
-        | Std
-        | Range
-
-    type Aggregate<'dp> = { windowing:Windowing<'dp>; operation:AggregationOperation; } //TODO rework. Types define their own aggregators!
-
-    type Anchor<'p> =
-        | Start
-        | End
-        | Position of 'p
+    type Aggregate<'p,'dp> = 
+        | WholeSequence 
+        | Windowed of Windowing<'p,'dp>
 
     type Sample<'p,'dp> =
         | Point of 'p
@@ -88,6 +91,7 @@ module Types =
         | Step
         | Linear
 
+    //[<RequireQualifiedAccess>]
     type ExtrapolationStrategy =
         | NoExtrapolation
         | BeforeFirst
