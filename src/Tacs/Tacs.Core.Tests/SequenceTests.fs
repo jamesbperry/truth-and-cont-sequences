@@ -78,12 +78,12 @@ let ``interval slice on point positions should produce correct subsequence`` () 
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
         LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
     let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
-    let slstrat = { IntervalSlice.start=Some {boundary=Inclusive 2.0;strategy=Interpolated};endbound= Some {boundary=Exclusive 4.0;strategy=Interpolated}}   
+    let slstrat = { IntervalSlice.start=Some {boundary=Inclusive 2.0;strategy=Interpolated};endbound= Some {boundary=Inclusive 4.0;strategy=Interpolated}}   
     let subseq = sliceByInterval FloatPosition slstrat fullseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 2.0;value=2.0},{position=Exclusive 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
-        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Exclusive 4.0;value=4.0});];
+        LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 4.0;value=4.0});];
     Array.ofList subseq.intvalues |> should equal (Array.ofList expectedvals)  
 
 [<Test>]
@@ -94,7 +94,7 @@ let ``interval slice between point positions should produce correct subsequence`
         LinearFloatInterval ({position=Inclusive 3.0;value=3.0},{position=Exclusive 4.0;value=4.0});
         LinearFloatInterval ({position=Inclusive 4.0;value=4.0},{position=Inclusive 5.0;value=5.0});];
     let fullseq = {id="test"; intvalues=allvals; preextrap=ConstantBeforeExclusive 1.0 1.0;postextrap=ConstantAfterExclusive 5.0 5.0 }
-    let slstrat = { IntervalSlice.start=Some {boundary=Exclusive 1.5;strategy=Interpolated};endbound= Some {boundary=Inclusive 3.5;strategy=Interpolated}}   
+    let slstrat = { IntervalSlice.start=Some {boundary=Inclusive 1.5;strategy=Interpolated};endbound= Some {boundary=Inclusive 3.5;strategy=Interpolated}}   
     let subseq = sliceByInterval FloatPosition slstrat fullseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive 1.5;value=1.5},{position=Exclusive 2.0;value=2.0});
@@ -412,13 +412,29 @@ let ``windowing by width from start looking forward should produce accurate resu
         LinearFloatInterval ({position=Inclusive <| rtp 4.0;value=4.0},{position=Inclusive <| rtp 5.0;value=5.0});]; 
     let inpseq:FloatValuedSequence<DateTimeOffset> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
     let windowing:Windowing<DateTimeOffset,TimeSpan> = Tumbling (Start,LookingForward,Width <| TimeSpan.FromMinutes 1.0)
-    let windowed = Sequence.window TimePosition windowing inpseq
+    let windowed = List.collect <| (fun s -> s.intvalues) <| Sequence.window TimePosition windowing inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Exclusive <| rtp 2.0;value=2.0});
         LinearFloatInterval ({position=Inclusive <| rtp 2.0;value=2.0},{position=Exclusive <| rtp 3.0;value=3.0});
         LinearFloatInterval ({position=Inclusive <| rtp 3.0;value=3.0},{position=Exclusive <| rtp 4.0;value=4.0});
         LinearFloatInterval ({position=Inclusive <| rtp 4.0;value=4.0},{position=Exclusive <| rtp 5.0;value=5.0});];
-    Array.ofList inpvals |> should equal expectedvals 
+    Array.ofList windowed |> should equal expectedvals 
+
+[<Test>]
+let ``windowing by width from start looking forward on a single interval should produce accurate results`` () =
+    let rt = DateTimeOffset.FromUnixTimeSeconds <| int64 1531525039
+    let rtp mins = rt + TimeSpan.FromMinutes mins
+    let inpvals = [
+        LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Inclusive <| rtp 5.0;value=5.0});]; 
+    let inpseq:FloatValuedSequence<DateTimeOffset> = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
+    let windowing:Windowing<DateTimeOffset,TimeSpan> = Tumbling (Start,LookingForward,Width <| TimeSpan.FromMinutes 1.0)
+    let windowed = List.collect <| (fun s -> s.intvalues) <| Sequence.window TimePosition windowing inpseq
+    let expectedvals = [
+        LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Exclusive <| rtp 2.0;value=2.0});
+        LinearFloatInterval ({position=Inclusive <| rtp 2.0;value=2.0},{position=Exclusive <| rtp 3.0;value=3.0});
+        LinearFloatInterval ({position=Inclusive <| rtp 3.0;value=3.0},{position=Exclusive <| rtp 4.0;value=4.0});
+        LinearFloatInterval ({position=Inclusive <| rtp 4.0;value=4.0},{position=Exclusive <| rtp 5.0;value=5.0});];
+    Array.ofList windowed |> should equal expectedvals 
 
 // [<Test>]
 // let ``windowers gonna window`` () =

@@ -215,9 +215,13 @@ module Sequence =
             let (pbef, paft) =
                 match bnd with
                 | InclusiveLow -> (Exclusive pos, Inclusive pos)
-                | InclusiveHigh -> (Inclusive pos, Exclusive pos)
+                | InclusiveHigh -> (Inclusive pos, Exclusive pos)            
+            let (befstart,aftend) =
+                match (int.startbound =@= int.endbound) with
+                | false -> (int.startbound,int.endbound)
+                | true -> (Inclusive int.startbound.position,Inclusive int.endbound.position) //TODO disallow case where zero-length interval is exclusive
 
-            {before=Some {startbound=int.startbound;endbound=pbef;value=vbef};after=Some {startbound=paft;endbound=int.endbound;value=vaft}}
+            {before=Some {startbound=befstart;endbound=pbef;value=vbef};after=Some {startbound=paft;endbound=aftend;value=vaft}}
 
         let trimopt = Option.map2 trim
         Option.defaultValue {before=None;after=None} <| trimopt intop (Some bound)  
@@ -267,9 +271,9 @@ module Sequence =
     let getIntervalsAtAndBefore (inseq:IntervalSequence<'p,'v,'i>) (strat:SliceStrategy) pn b = 
         match strat with
             | Inside -> List.takeWhile (fun v -> intervalEndsBefore (b) v) inseq.intvalues
-            | Intersected -> List.takeWhile (fun v -> intervalStartsBefore (b) v) inseq.intvalues
+            | Intersected -> List.takeWhile (fun v -> not <| intervalStartsAfter (b) v) inseq.intvalues
             | Interpolated -> 
-                let wintersect = List.takeWhile (fun v -> intervalStartsBefore (b) v) inseq.intvalues
+                let wintersect = List.takeWhile (fun v -> not <| intervalStartsAfter (b) v) inseq.intvalues
                 printfn "%A\n\n" wintersect
                 let lastopt = List.tryLast wintersect
                 match lastopt with
