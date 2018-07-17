@@ -313,16 +313,40 @@ module Sequence =
         let lastint = List.last inseq.intvalues
         (firstint.startbound,lastint.endbound)
 
-    let inline incrementBy (del:'dp) (pos:'p when 'p : (static member (+) : 'p * 'dp -> 'p)) =
+    let inline private incrementByP (del:'p) (pos:'p) : 'p =
         pos + del
 
-    let inline decrementBy (del:'dp) (pos:'p when 'p : (static member (-) : 'p * 'dp -> 'p)) =
+    let inline private decrementByP (del:'p) (pos:'p) : 'p =
         pos - del
+
+    let inline private incrementByDp (del:'dp) (pos:'p when 'p : (static member (+) : 'p * 'dp -> 'p)) =
+        pos + del
+
+    let inline private decrementByDp (del:'dp) (pos:'p when 'p : (static member (-) : 'p * 'dp -> 'p)) =
+        pos - del
+
+    let inline private someIfStartsBefore (start:'p) (del:'dp) (before:'p) : ('p*'p) option =
+            if start < before then Some (start, start |> incrementByDp del) else None
+
+    // let private someIfEndsAfter
+
+    let inline private getFrom (startpos:'p) del (endpos:'p) : ('p*'p) list =
+            let tup e = Option.map (fun p -> (p,p)) <| someIfStartsBefore e del endpos
+            List.unfold (fun (_,e) -> tup e) (startpos,startpos)
+
+    // let makeBounds del root (startd,endb)
+    //     List.unfold 
+
 
     let inline tumblingWindowDelBounds (a:Anchor<'p>) wd (del:'dp) (inseq:IntervalSequence<'p,_,_>)  : (IntervalBoundary<'p>*IntervalBoundary<'p>) list =
         let (seqstart,seqend) = bounds inseq
+        let incrementer = 
+            match box del with
+            | :? 'p -> incrementByP
+            | _ -> incrementByDp 
+        
         let someIfStartsBefore (start:'p) (del:'dp) (before:'p) : ('p*'p) option =
-            if start < before then Some (start, start |> incrementBy del) else None
+            if start < before then Some (start, start |> incrementByDp del) else None
 
         let getFrom (startpos:'p) del (endpos:'p) : ('p*'p) list =
             let tup e = Option.map (fun p -> (p,p)) <| someIfStartsBefore e del endpos
@@ -337,15 +361,11 @@ module Sequence =
 
         positions |> List.map (asWindow wd)
 
-    let inline windowTumbling pn (a:Anchor<'p>) (wd:WindowingDirection) (is:IntervalSize<'dp>) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) =
-        let dp = 
-            match is with
-            | Width w -> w
-            | _ -> failwith "not implemented"
-        let windows = tumblingWindowDelBounds a wd dp inseq
+    let inline windowTumbling pn (a:Anchor<'p>) (wd:WindowingDirection) (is:'dp) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) =
+        let windows = tumblingWindowDelBounds a wd is inseq
         windows |> List.map (fun w -> sliceByBoundariesInterpolated pn (w) inseq)
 
-    let inline windowSliding pn a wd (is:IntervalSize<'dp>) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) = 
+    let inline windowSliding pn wd (is:'dp) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) = 
         failwith "not implemented"
 
     let inline windowHopping pn a wd (h:HoppingWindowing<'dp>) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i> list) = 
@@ -355,7 +375,7 @@ module Sequence =
         match w with
         | Single _ -> [inseq]
         | Tumbling (a,wd,is) -> windowTumbling pn a wd is inseq   
-        | Sliding (a,wd,is) -> windowSliding pn a wd is inseq
+        | Sliding (wd,is) -> windowSliding pn wd is inseq
         | Hopping (a,wd,h) -> windowHopping pn a wd h inseq
 
     // let aggregate (a:Aggregate<'p>) (inseq:IntervalSequence<'p,'v,'i>) : (IntervalSequence<'p,'v,'i>) =
@@ -372,7 +392,9 @@ module Sequence =
 
 (*
     EOD thoughts:
+    - need to figure out the static constraint not resolving
     - windowing needs look directions, sliding/hopping, and byCount for tumbling
     - sampling needs intervals and tests for sample(s)at
     - TimeValue needs to be brought into the 21st century, i.e. implement data interfaces
+    - start thinking about projection
 *)    

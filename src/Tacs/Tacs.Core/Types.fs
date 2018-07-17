@@ -50,10 +50,6 @@ module Types =
         | ForwardSlice of ForwardSlice<'p>
         | BackwardSlice of BackwardSlice<'p>
 
-    type IntervalSize<'dp> = //But can be a different datatype than 'p... e.g. TimeSpan for DateTime
-        | Width of 'dp
-        | Count of int
-
     type Anchor<'p> =
         | Start //TODO rename to FromStart. My dotnet build is throwing a fit at time fo writing this comment
         | FromEnd
@@ -63,13 +59,13 @@ module Types =
         | LookingForward
         | LookingBackward
 
-    type HoppingWindowing<'dp> = { size:IntervalSize<'dp>; hop:IntervalSize<'dp> }
+    type HoppingWindowing<'dp> = { size:'dp; hop:'dp }
 
-    type Windowing<'p,'dp> =
+    type Windowing<'p,'dp> = //Position and its difference can be different datatypes... e.g. TimeSpan for DateTime
         | Single
-        | Tumbling of Anchor<'p> * WindowingDirection * IntervalSize<'dp>
-        | Sliding of Anchor<'p> * WindowingDirection * IntervalSize<'dp>
+        | Tumbling of Anchor<'p> * WindowingDirection * 'dp
         | Hopping of Anchor<'p> * WindowingDirection * HoppingWindowing<'dp>
+        | Sliding of WindowingDirection * 'dp
 
     type Aggregate<'p,'dp> = 
         | WholeSequence 
@@ -78,7 +74,7 @@ module Types =
     type Sample<'p,'dp> =
         | SampleAt of 'p
         | SamplesAt of 'p list
-        | SampleIntervals of IntervalSize<'dp> * Anchor<'p>
+        | SampleIntervals of 'dp * Anchor<'p>
 
     // type Operations<'p> =
     //     | Remodel of Remodel
@@ -96,8 +92,10 @@ module Types =
     type BoundaryValue<'p,'v> = { position:IntervalBoundary<'p>; value:'v }
 
     type PointValue<'p,'v> =  { position:'p; value:'v } with
-        static member OfBoundary (bv:BoundaryValue<'p,'v>) =
+        static member ofBoundary (bv:BoundaryValue<'p,'v>) =
             {position=bv.position.position;value=bv.value}
+        static member map (f:'v -> 'v2) v : PointValue<'p,'v2> =
+            {position=v.position;value=f v.value}       
 
     type NormalizedPosition = 
         | NormalizedPosition of float
@@ -123,6 +121,9 @@ module Types =
         match iiv with
         | :? 'i as ti -> ti
         | _ -> failwith "Failed to upcast interval value"
+
+    let inline ClampScale (v:'a) = //TODO relocate
+        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
     //TODO use inherited, not directly, so Split returns a properly-typed interval e.g. IFloatValue<_,_>
     type ConstantValue<'p,'v> =

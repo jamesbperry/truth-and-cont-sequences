@@ -1,14 +1,9 @@
 namespace Tacs.Core
 
-open Sequence
-open Sequence
 module FloatOps =
 
     open System
     open Types
-
-    let inline ClampScale (v:'a) =
-        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
     let FloatPosition (low:float) (high:float) (at:float) =
         ClampScale <| (at - low)/(high - low)           
@@ -21,8 +16,7 @@ module FloatOps =
 
     let InterpolateValueConstant (v:float) (p:'p) =
         v
-    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,float>*PointValue<'p,float>) (p:'p) =
-        let (pti, ptf) = pts
+    let InterpolateValueLinear<'p> (pinterp:PositionNormalizer<'p>) (pti:PointValue<'p,float>,ptf:PointValue<'p,float>) (p:'p) =
         let dv = ptf.value - pti.value
         let npos = pinterp pti.position ptf.position p
         pti.value + (dv * npos)
@@ -76,7 +70,7 @@ module FloatOps =
         {pstart=pstart;pend=pend}
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IFloatValue<_>}      
+        {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb} :> IFloatValue<_>}      
 
     //// This is an experiment that has been put on the back burner
     // type PiecewiseFloatValue<'p when 'p : comparison> =

@@ -5,9 +5,6 @@ module TimeOps =
     open System
     open Types
 
-    let inline ClampScale (v:'a) =
-        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
-
     let TimePosition (low:System.DateTimeOffset) (high:System.DateTimeOffset) (at:System.DateTimeOffset) =
         ClampScale <| (float (at.Ticks - low.Ticks))/(float (high.Ticks - low.Ticks))                   
 
@@ -42,7 +39,7 @@ module TimeOps =
         {LinearTimeValue.pstart=pstart;pend=pend}
 
     let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}}  //value :> ITimeValue<_> //TODO
+        {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}  //value :> ITimeValue<_> //TODO
 
     //DateTimeOffset
     // let Integrate (inseq:Interval<'a,DateTimeOffset> seq) : (Interval<'a,DateTimeOffset>) =

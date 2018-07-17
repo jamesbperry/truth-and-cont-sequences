@@ -411,7 +411,7 @@ let ``windowing by width from start looking forward should produce accurate resu
         LinearFloatInterval ({position=Inclusive <| rtp 3.0;value=3.0},{position=Exclusive <| rtp 4.0;value=4.0});
         LinearFloatInterval ({position=Inclusive <| rtp 4.0;value=4.0},{position=Inclusive <| rtp 5.0;value=5.0});]; 
     let inpseq = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let windowing = Tumbling (Start,LookingForward,Width <| TimeSpan.FromMinutes 1.0)
+    let windowing = Tumbling (Start,LookingForward,TimeSpan.FromMinutes 1.0)
     let windowed = List.collect <| (fun s -> s.intvalues) <| Sequence.window TimePosition windowing inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Exclusive <| rtp 2.0;value=2.0});
@@ -427,7 +427,7 @@ let ``windowing by width from start looking forward on a single interval should 
     let inpvals = [
         LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Inclusive <| rtp 5.0;value=5.0});]; 
     let inpseq = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let windowing = Tumbling (Start,LookingForward,Width <| TimeSpan.FromMinutes 1.0)
+    let windowing = Tumbling (Start,LookingForward,TimeSpan.FromMinutes 1.0)
     let windowed = List.collect <| (fun s -> s.intvalues) <| Sequence.window TimePosition windowing inpseq
     let expectedvals = [
         LinearFloatInterval ({position=Inclusive <| rtp 1.0;value=1.0},{position=Exclusive <| rtp 2.0;value=2.0});
@@ -446,7 +446,7 @@ let ``aggregation windowed by width from start looking forward on a single inter
         LinearFloatInterval ({position=Inclusive <| rtp 3.0;value=3.0},{position=Exclusive <| rtp 4.0;value=4.0});
         LinearFloatInterval ({position=Inclusive <| rtp 4.0;value=4.0},{position=Inclusive <| rtp 5.0;value=5.0});]; 
     let inpseq = {id="test"; intvalues=inpvals; preextrap=NoExtrapolation();postextrap=NoExtrapolation() }
-    let windowing = Tumbling (Start,LookingForward,Width <| TimeSpan.FromMinutes 1.0)
+    let windowing = Tumbling (Start,LookingForward,TimeSpan.FromMinutes 1.0)
     let windowed = Sequence.window TimePosition windowing inpseq
     let agged = List.collect (fun s -> FloatOps.Mean OnTimePosition s) windowed
     let expectedvals = [|
