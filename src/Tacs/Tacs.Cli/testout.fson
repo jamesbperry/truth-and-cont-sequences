@@ -1,0 +1,31 @@
+Got parse results [Remodel [ToIntervals [WithPositionType Time; AndValueType [Float Constant]]]]
+{id = "test";
+ intvalues =
+  [{startbound = Inclusive 01-Jan-18 12:01:00 +05:00;
+    endbound = Exclusive 01-Jan-18 12:01:01 +05:00;
+    value = {pstart = {position = 01-Jan-18 12:01:00 +05:00;
+                       value = 42.0;};
+             pend = {position = 01-Jan-18 12:01:01 +05:00;
+                     value = 44.0;};};};
+   {startbound = Inclusive 01-Jan-18 12:01:01 +05:00;
+    endbound = Exclusive 01-Jan-18 12:01:02 +05:00;
+    value = {pstart = {position = 01-Jan-18 12:01:01 +05:00;
+                       value = 44.0;};
+             pend = {position = 01-Jan-18 12:01:02 +05:00;
+                     value = 46.0;};};};
+   {startbound = Inclusive 01-Jan-18 12:01:02 +05:00;
+    endbound = Exclusive 01-Jan-18 12:01:03 +05:00;
+    value = {pstart = {position = 01-Jan-18 12:01:02 +05:00;
+                       value = 46.0;};
+             pend = {position = 01-Jan-18 12:01:03 +05:00;
+                     value = 48.0;};};};
+   {startbound = Inclusive 01-Jan-18 12:01:03 +05:00;
+    endbound = Inclusive 01-Jan-18 12:01:04 +05:00;
+    value = {pstart = {position = 01-Jan-18 12:01:03 +05:00;
+                       value = 48.0;};
+             pend = {position = 01-Jan-18 12:01:04 +05:00;
+                     value = 50.0;};};}];
+ preextrap = {endbound = Exclusive 01-Jan-18 12:01:00 +05:00;
+              constantextrap = 42.0;};
+ postextrap = {startbound = Exclusive 01-Jan-18 12:01:03 +05:00;
+               constantextrap = 50.0;};}

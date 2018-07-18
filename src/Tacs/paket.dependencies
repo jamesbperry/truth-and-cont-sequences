@@ -8,6 +8,7 @@ nuget System.Console 4.3.0
 nuget NETStandard.Library
 
 github fsprojects/FsUnit src/FsUnit.NUnit/FsUnit.fs
+nuget newtonsoft.json
 
 group Test
     source https://api.nuget.org/v3/index.json
