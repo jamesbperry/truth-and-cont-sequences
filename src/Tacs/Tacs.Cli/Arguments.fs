@@ -49,41 +49,89 @@ type BuiltInTimeInterp =
     | Linear = 1
 
 type BuiltInValueTypes =
-    | [<CliPrefix(CliPrefix.None)>]IntVal of BuiltInIntInterp
-    | [<CliPrefix(CliPrefix.None)>]FloatVal of BuiltInFloatInterp
-    | [<CliPrefix(CliPrefix.None)>]TimeVal of BuiltInTimeInterp
+    | [<CliPrefix(CliPrefix.None)>]Integer of BuiltInIntInterp
+    | [<CliPrefix(CliPrefix.None)>]Float of BuiltInFloatInterp
+    | [<CliPrefix(CliPrefix.None)>]Time of BuiltInTimeInterp
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | IntVal _ -> "Values are integers."
-            | FloatVal _ -> "Values are floats."
-            | TimeVal _ -> "Values are datetimes."
+            | Integer _ -> "Values are integers."
+            | Float _ -> "Values are floats."
+            | Time _ -> "Values are datetimes."
 
 type BuiltInPositionTypes =
-    | IntPos = 0
-    | FloatPos = 1
-    | TimePos = 2
+    | Integer = 0
+    | Float = 1
+    | Time = 2
 
-type RemodelArgs =
-    | [<CliPrefix(CliPrefix.None);Mandatory;Unique>] PositionType of BuiltInPositionTypes //ParseResults<BuiltInPositionTypes>
-    | [<CliPrefix(CliPrefix.None)>] ValueType of ParseResults<BuiltInValueTypes>
+type IntervalSide =
+    | BeginningOfInterval = 0
+    | EndOfInterval = 1
+
+type RemodelToPointsArgs =
+    | [<CliPrefix(CliPrefix.None);Mandatory;Unique>] WithPositionType of BuiltInPositionTypes 
+    // | [<CliPrefix(CliPrefix.None);Mandatory;Unique>] TimestampedAt of IntervalSide
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | PositionType _ -> "The data type of the sequence's position, i.e. x-axis."
-            | ValueType _ -> "The value type and interpolation scheme of the sequence's value, i.e. y-axis"
+            | WithPositionType _ -> "The data type of the sequence's position, i.e. x-axis."
+            // | TimestampedAt_ -> "Each interval becomes one point. This is which side the timestamp."
+
+type RemodelToIntervalsArgs =
+    | [<CliPrefix(CliPrefix.None);Mandatory;Unique>] WithPositionType of BuiltInPositionTypes 
+    | [<CliPrefix(CliPrefix.None)>] AndValueType of ParseResults<BuiltInValueTypes>
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | WithPositionType _ -> "The data type of the sequence's position, i.e. x-axis."
+            | AndValueType _ -> "The value type and interpolation scheme of the sequence's value, i.e. y-axis"
+
+type RemodelArgs =
+    | [<CliPrefix(CliPrefix.None)>] ToPoints of ParseResults<RemodelToPointsArgs>
+    | [<CliPrefix(CliPrefix.None)>] ToIntervals of ParseResults<RemodelToIntervalsArgs>
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | ToPoints _ -> "The data type of the sequence's position, i.e. x-axis."
+            | ToIntervals _ -> "The value type and interpolation scheme of the sequence's value, i.e. y-axis"
+
+type CompressArgs = 
+    | Placeholder
+with
+    interface IArgParserTemplate with
+        member __.Usage = "To do"
+
+type SampleArgs = 
+    | Placeholder
+with
+    interface IArgParserTemplate with
+        member __.Usage = "To do"
+
+type AggregateArgs = 
+    | Placeholder
+with
+    interface IArgParserTemplate with
+        member __.Usage = "To do"
+
+type ProjectArgs = 
+    | Placeholder
+with
+    interface IArgParserTemplate with
+        member __.Usage = "To do"
 
 type TacsArgs =
     | [<AltCommandLine("-i")>] Input of input:string option
     | [<AltCommandLine("-o")>] Output of output:string option
     | [<CliPrefix(CliPrefix.None)>] Remodel of ParseResults<RemodelArgs>
     | [<CliPrefix(CliPrefix.None)>] Slice of ParseResults<SliceArgs>
-    // | [<CliPrefix(CliPrefix.None)>] Project of ParseResults<ProjectArgs>
-    // | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
-    // | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>
-    // | [<CliPrefix(CliPrefix.None)>] Compress of ParseResults<CompressArgs>
+    | [<CliPrefix(CliPrefix.None)>] Project of ParseResults<ProjectArgs>
+    | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
+    | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>
+    | [<CliPrefix(CliPrefix.None)>] Compress of ParseResults<CompressArgs>
 with
     interface IArgParserTemplate with
         member this.Usage = 
@@ -92,7 +140,7 @@ with
             | Output _ -> "Write resultant stream to a file. If not specified, writes to stdout."
             | Remodel _ -> "Transform a series of discrete points into a series of intervals, and vice versa."
             | Slice _ -> "Slice the input stream by minimum and/or maximum position values."
-            // | Project _ -> "Project the input stream values into a different type. (Map)"
-            // | Aggregate _ -> "Aggregate the input stream. (Reduce)"
-            // | Sample _ -> "Sample the input stream."
-            // | Compress _ -> "Compress the input stream."
+            | Project _ -> "Project the input stream values into a different type. (Map)"
+            | Aggregate _ -> "Aggregate the input stream. (Reduce)"
+            | Sample _ -> "Sample the input stream."
+            | Compress _ -> "Compress the input stream."

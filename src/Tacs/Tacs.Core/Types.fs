@@ -8,21 +8,27 @@ module Types =
         | InclusiveHigh
 
     type Inclusivity =
-        | IsInclusive
-        | IsExclusive
+        | AsInclusive
+        | AsExclusive
 
     type IntervalBoundary<'p> =
         | Inclusive of 'p
         | Exclusive of 'p
-        member self.position =
-            match self with
+        static member private PositionOf ib =
+            match ib with
             | Inclusive i -> i
-            | Exclusive e -> e      
+            | Exclusive e -> e
+        member self.position = IntervalBoundary<_>.PositionOf self
+        static member (=@=) (x,y) =
+            
+            let xp = IntervalBoundary<_>.PositionOf x
+            let yp = IntervalBoundary<_>.PositionOf y
+            Object.Equals (xp,yp)
 
     type SliceStrategy = 
-        | Inside //Exclusive
-        | Interpolated
-        | Intersected //Inclusive
+        | Inside
+        | Interpolated 
+        | Intersected
 
     type RemodelAnchor =
         | IntervalStart
@@ -33,9 +39,9 @@ module Types =
         | ToPoints
         | ToIntervals
 
-    type SliceBoundary<'p> = { position:'p; strategy:SliceStrategy }
+    type SliceBoundary<'p> = { boundary:IntervalBoundary<'p>; strategy:SliceStrategy }
 
-    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; endbound:SliceBoundary<'p> option; }
+    type IntervalSlice<'p> = { start:SliceBoundary<'p> option; endbound:SliceBoundary<'p> option; } //smells
     type ForwardSlice<'p> = { start:SliceBoundary<'p>; count:int; }
     type BackwardSlice<'p> = {count:int; endbound:SliceBoundary<'p>; }
 
@@ -44,38 +50,31 @@ module Types =
         | ForwardSlice of ForwardSlice<'p>
         | BackwardSlice of BackwardSlice<'p>
 
-    type IntervalSize<'dp> = //But can be a different datatype than 'p... e.g. TimeSpan for DateTime
-        | Width of 'dp
-        | Count of int
-
-    type HoppingWindowing<'dp> = { size:IntervalSize<'dp>; hop:IntervalSize<'dp> }
-
-    type Windowing<'dp> =
-        | Single
-        | Sliding of IntervalSize<'dp>
-        | Hopping of HoppingWindowing<'dp>
-
-    type AggregationOperation = //TODO remove. types define their own aggregators!
-        | NoOp
-        | Custom of string
-        | Integral
-        | Avg
-        | Max
-        | Min
-        | Std
-        | Range
-
-    type Aggregate<'dp> = { windowing:Windowing<'dp>; operation:AggregationOperation; } //TODO rework. Types define their own aggregators!
-
     type Anchor<'p> =
-        | Start
-        | End
-        | Position of 'p
+        | Start //TODO rename to FromStart. My dotnet build is throwing a fit at time fo writing this comment
+        | FromEnd
+        | FromPosition of 'p
+
+    type WindowingDirection =
+        | LookingForward
+        | LookingBackward
+
+    type HoppingWindowing<'dp> = { size:'dp; hop:'dp }
+
+    type Windowing<'p,'dp> = //Position and its difference can be different datatypes... e.g. TimeSpan for DateTime
+        | Single
+        | Tumbling of Anchor<'p> * WindowingDirection * 'dp
+        | Hopping of Anchor<'p> * WindowingDirection * HoppingWindowing<'dp>
+        | Sliding of WindowingDirection * 'dp
+
+    type Aggregate<'p,'dp> = 
+        | WholeSequence 
+        | Windowed of Windowing<'p,'dp>
 
     type Sample<'p,'dp> =
-        | Point of 'p
-        | Points of 'p list
-        | Intervals of IntervalSize<'dp> * Anchor<'p>
+        | SampleAt of 'p
+        | SamplesAt of 'p list
+        | SampleIntervals of 'dp * Anchor<'p>
 
     // type Operations<'p> =
     //     | Remodel of Remodel
@@ -83,10 +82,6 @@ module Types =
     //     | Aggregate of Aggregate<'a>
     //     | Sample of Sample<'p,'dp>
     //     | Compress of Compress<'a>
-
-    type InterpolationStrategy =
-        | Step
-        | Linear
 
     type ExtrapolationStrategy =
         | NoExtrapolation
@@ -97,8 +92,10 @@ module Types =
     type BoundaryValue<'p,'v> = { position:IntervalBoundary<'p>; value:'v }
 
     type PointValue<'p,'v> =  { position:'p; value:'v } with
-        static member OfBoundary (bv:BoundaryValue<'p,'v>) =
+        static member ofBoundary (bv:BoundaryValue<'p,'v>) =
             {position=bv.position.position;value=bv.value}
+        static member map (f:'v -> 'v2) v : PointValue<'p,'v2> =
+            {position=v.position;value=f v.value}       
 
     type NormalizedPosition = 
         | NormalizedPosition of float
@@ -108,7 +105,7 @@ module Types =
     type PositionNormalizer<'p> = 'p -> 'p -> 'p -> float
     type ValueInterpolator<'p,'v> = 'p -> 'v
 
-    //We want .Split to return ('concrete*'concrete). 
+    //We want .Split to return ('Tconcrete * 'Tconcrete). 
     //But F# lacks direct covariance and has a few other constraints, so it seems this is not possible in straightforward ways. 
     //Generic type constraints to interfaces do behave covariantly, though. We will abuse those.
     //By passing in a concrete IIntervalValue implementation as an argument to its own .Split instance, we capture its type as a 'generic constrained to implement IIntervalValue.
@@ -124,6 +121,9 @@ module Types =
         match iiv with
         | :? 'i as ti -> ti
         | _ -> failwith "Failed to upcast interval value"
+
+    let inline ClampScale (v:'a) = //TODO relocate
+        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
 
     //TODO use inherited, not directly, so Split returns a properly-typed interval e.g. IFloatValue<_,_>
     type ConstantValue<'p,'v> =

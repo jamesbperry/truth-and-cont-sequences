@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>tacs.examples</AssemblyName>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tacs.Core\Tacs.Core.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GoodOrBad.fs" />
+    <Compile Include="Complex.fs" />
+    <Compile Include="ElapsedTime.fs" />
+    <Compile Include="Geospatial/Coordinate2D.fs" />
+    <Compile Include="Geospatial/Envelope2D.fs" />
+    <Compile Include="Geospatial/Multipoint2D.fs" />
+    <Compile Include="Set.fs" />
+    <Compile Include="RelativeError.fs" />
+  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>
