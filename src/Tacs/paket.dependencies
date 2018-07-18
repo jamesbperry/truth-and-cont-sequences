@@ -15,3 +15,8 @@ group Test
     nuget NUnit.Console
     nuget NUnit
     nuget NUnit3TestAdapter
+
+group Build
+source https://www.nuget.org/api/v2
+
+nuget FAKE
