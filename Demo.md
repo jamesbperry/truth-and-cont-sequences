@@ -15,6 +15,8 @@ Interesting demo ideas:
 * **Complex data: graph/set** -- set
 * **Complex data: quality** -- relative error
 * **Complex data: fuzzy/probabilistic**
+* **Concept: Set-based calculations and aggregates** -- connectivity
+* **Concept: Representing event frames**
 
 Fundamental demo ideas:
 * **Intervals**
