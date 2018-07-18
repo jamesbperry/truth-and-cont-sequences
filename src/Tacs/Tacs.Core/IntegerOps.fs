@@ -5,9 +5,6 @@ module IntegerOps =
     open System
     open Types
 
-    let inline ClampScale (v:'a) =
-        min LanguagePrimitives.GenericOne (max LanguagePrimitives.GenericZero v)
-
     let IntegerPosition (low:int) (high:int) (at:int) =
                 ClampScale <| (float (at - low))/(float (high - low))                  
 
@@ -20,22 +17,19 @@ module IntegerOps =
     let InterpolateValueConstant (v:int) (p:'p) : int =
         v
 
-    let InterpolateValueLinearNearest<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) =
-        let (pti, ptf) = pts
+    let InterpolateValueLinearNearest<'p> (pinterp:PositionNormalizer<'p>) (pti:PointValue<'p,int>,ptf:PointValue<'p,int>) (p:'p) =
         let dv = ptf.value - pti.value
         let npos = pinterp pti.position ptf.position p
         let f = int (float dv * npos)
         pti.value + f
 
-    let InterpolateValueLinearFloor<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) = 
-        let (pti, ptf) = pts
+    let InterpolateValueLinearFloor<'p> (pinterp:PositionNormalizer<'p>) (pti:PointValue<'p,int>,ptf:PointValue<'p,int>) (p:'p) = 
         let dv = ptf.value - pti.value
         let npos = pinterp pti.position ptf.position p
         let f = int <| floor (float dv * npos)
         pti.value + f
 
-    let InterpolateValueLinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (pts:PointValue<'p,int>*PointValue<'p,int>) (p:'p) = 
-        let (pti, ptf) = pts
+    let InterpolateValueLinearCeiling<'p> (pinterp:PositionNormalizer<'p>) (pti:PointValue<'p,int>,ptf:PointValue<'p,int>) (p:'p) = 
         let dv = ptf.value - pti.value
         let npos = pinterp pti.position ptf.position p
         let f = int <| ceil (float dv * npos)
@@ -130,25 +124,25 @@ module IntegerOps =
         {LinearCeilingIntValue.pstart=pstart;pend=pend} :> IIntegerValue<'p>
 
     let LinearNearestIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearNearestIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb} :> IIntegerValue<_>}
+        {startbound=startb.position;endbound=endb.position;value={LinearNearestIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb} :> IIntegerValue<_>}
 
     let LinearFloorIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearFloorIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}:> IIntegerValue<_>} 
+        {startbound=startb.position;endbound=endb.position;value={LinearFloorIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}:> IIntegerValue<_>} 
   
     let LinearCeilingIntInterval (startb:BoundaryValue<'p,int>,endb:BoundaryValue<'p,int>) =
-        {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.OfBoundary startb;pend=PointValue.OfBoundary endb}:> IIntegerValue<_> }
+        {startbound=startb.position;endbound=endb.position;value={LinearCeilingIntValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}:> IIntegerValue<_> }
                 
     let AggregateToFloat (np:IntValuedIntervalsNormalizer<'p>) op (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> op nint) norms
+        let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
-        List.ofSeq <| Seq.map2 (fun i (sv,ev) -> FloatOps.LinearFloatInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
+        List.ofSeq <| Seq.map2 (fun i (_,ev) -> FloatOps.ConstantFloatInterval (i.startbound,i.endbound) ev) inseq.intvalues runningpairs
 
     let AggregateToInt (np:IntValuedIntervalsNormalizer<'p>) op (inseq:IntValuedSequence<'p>) : IntValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
-        let integs = Seq.map (fun nint -> op nint) norms
+        let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0 integs |> Seq.pairwise
-        List.ofSeq <| Seq.map2 (fun i (sv,ev) -> LinearNearestIntInterval ({position=i.startbound;value=sv},{position=i.endbound;value=ev})) inseq.intvalues runningpairs
+        List.ofSeq <| Seq.map2 (fun i (_,ev) -> ConstantIntInterval (i.startbound, i.endbound) ev) inseq.intvalues runningpairs
     
     let Total (np:IntValuedIntervalsNormalizer<'p>) (inseq:IntValuedSequence<'p>) : FloatOps.FloatValuedInterval<'p> list =
         AggregateToFloat np (fun nint -> nint.interval.value.Total nint.weight) inseq
