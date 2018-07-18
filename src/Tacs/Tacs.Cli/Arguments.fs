@@ -2,158 +2,88 @@
 
 open Argu
 
-type WindowSizeStrategy =
-    | Width = 0
-    | Count = 1
+type SliceStrategyCLI =
+    | Inside = 0
+    | Interpolated = 1
+    | Intersected = 2
 
-type BoundaryStrategy =
-    | Interpolated = 0
-    | InsideInclusive = 1
-    | InsideExclusive = 2
-    | OutsideInclusive = 3
-    | OutsideExclusive = 4
+//type SliceBoundaryArgs =
 
-type CompressionStrategy =
-    | None = 0
-    | Custom = 1
-    | SwingingDoor  = 2
-    | LCA = 3
-    | Plot = 4
+type CountSliceArgs =
+    | [<CliPrefix(CliPrefix.None);Mandatory>]As of SliceStrategyCLI
+    | [<CliPrefix(CliPrefix.None);Mandatory>]From of from:string
+    | [<CliPrefix(CliPrefix.None);Mandatory>]Count of count:int
+with     
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+                | As _ -> "How the boundary is enforced."
+                | From _ -> "Position for the slice."
+                | Count _ -> "Number of values to include."
 
-type AggregationOperations =
-    | None = 0
-    | Custom = 1
-    | Integral = 2
-    | Avg = 3
-    | Max = 4
-    | Min = 5
-    | Std = 6
-    | Vrange = 7
-    | Krange = 8
+//type IntervalSliceArgs =
 
-type Extent =
-    | Start = 0
-    | End = 1
+type SliceArgs =
+    //| Interval of ParseResults<IntervalSliceArgs>
+    | [<CliPrefix(CliPrefix.None)>]Forward of ParseResults<CountSliceArgs>
+    | [<CliPrefix(CliPrefix.None)>]Backward of ParseResults<CountSliceArgs>
+with     
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+                | Forward _ -> "Slice forward, i.e. with increasing position."
+                | Backward _ -> "Slice backward, i.e. with decreasing position."
 
+type BuiltInIntInterp =
+    | Constant = 0
+    | LinearNearest = 1
+    | LinearFloor = 2
+    | LinearCeiling = 3
 
-[<CliPrefix(CliPrefix.Dash)>]
-type CompressArgs =
-    | [<AltCommandLine("-s")>] Strategy of strategy:CompressionStrategy
-    | [<Last;AltCommandLine("-c")>] Config of config:string list
+type BuiltInFloatInterp =
+    | Constant = 0
+    | Linear = 1
+
+type BuiltInTimeInterp =
+    | Constant = 0
+    | Linear = 1
+
+type BuiltInValueTypes =
+    | [<CliPrefix(CliPrefix.None)>]IntVal of BuiltInIntInterp
+    | [<CliPrefix(CliPrefix.None)>]FloatVal of BuiltInFloatInterp
+    | [<CliPrefix(CliPrefix.None)>]TimeVal of BuiltInTimeInterp
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | Strategy _ -> "Compression strategy to use."
-            | Config _ -> "Parameters for the compression strategy."
-and AnchorzArgs =
-    | RelativeTo of anchorRel:Extent
-    | AtPosition of anchorAt:string
+            | IntVal _ -> "Values are integers."
+            | FloatVal _ -> "Values are floats."
+            | TimeVal _ -> "Values are datetimes."
+
+type BuiltInPositionTypes =
+    | IntPos = 0
+    | FloatPos = 1
+    | TimePos = 2
+
+type RemodelArgs =
+    | [<CliPrefix(CliPrefix.None);Mandatory;Unique>] PositionType of BuiltInPositionTypes //ParseResults<BuiltInPositionTypes>
+    | [<CliPrefix(CliPrefix.None)>] ValueType of ParseResults<BuiltInValueTypes>
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | RelativeTo _ -> "Anchor relative to the start or end of the sequence."
-            | AtPosition _ -> "Anchor to a specific position."
-and IntervalsSampleArgs =
-    | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
-    | [<CliPrefix(CliPrefix.None)>] Of of ofsize:string
-    | [<CliPrefix(CliPrefix.None)>] AlignedTo of ParseResults<AnchorzArgs>
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | By _ -> "Window sizing strategy."
-            | Of _ -> "The window size."
-            | AlignedTo _ -> "The point to fix as a window boundary."
-and SampleArgs =
-    | [<CliPrefix(CliPrefix.None)>] At of atOne:string
-    | [<CliPrefix(CliPrefix.None)>] Many of atMany:string list
-    | [<CliPrefix(CliPrefix.None)>] Intervals of ParseResults<IntervalsSampleArgs>
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | At _ -> "Sample at one specified position." 
-            | Many _ -> "Sample at many specified positions." 
-            | Intervals _ -> "Sample intervals of equal length or count." 
-and SlidingWindowArgs = 
-    | [<CliPrefix(CliPrefix.None)>] By of by:WindowSizeStrategy
-    | [<CliPrefix(CliPrefix.None)>] Of of ofSize:string
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | By _ -> "Sizing strategy for the windows."
-            | Of _ -> "Size of the windows."
-and HoppingWindowArgs = 
-    | [<AltCommandLine("-w")>] Width of width:string
-    | [<AltCommandLine("-cw")>] Hop of hop:string
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Width _ -> "Width of each window."
-            | Hop _ -> "Windows are generated at this interval."
-and WindowedArgs =
-    | [<CliPrefix(CliPrefix.None)>] Sliding of ParseResults<SlidingWindowArgs>
-    | [<CliPrefix(CliPrefix.None)>] Hopping of ParseResults<HoppingWindowArgs>
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Sliding _ -> "A window is generated for each event, with the event as the window end"
-            | Hopping _ -> "Windows advance by a constant position value"
-and NonWindowedArgs =
-    | [<Hidden>] Dummy
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Dummy -> "Not used. This enclosing type exists in contrast to Windowed, since nested types can't be optional."   
-and AggregateArgs =
-    | [<CliPrefix(CliPrefix.None)>] Windowed of ParseResults<WindowedArgs>
-    | [<CliPrefix(CliPrefix.None)>] All of ParseResults<NonWindowedArgs>
-    | [<AltCommandLine("-o")>] Operation of operation:AggregationOperations
-    | [<AltCommandLine("-c")>] Config of config:string list
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Windowed _ -> "Optional windowing strategy."
-            | All _ -> ""
-            | Operation _ -> "The operation to be applied."
-            | Config _ -> "Parameters for the aggregation operation."
-and SliceArgs =
-    | [<AltCommandLine("-s")>] Start of start:string option
-    | [<AltCommandLine("-ss")>] StartStrategy of startstrategy:BoundaryStrategy option
-    | [<AltCommandLine("-c")>] Count of count:int option
-    | [<AltCommandLine("-e")>] End of endbound:string option
-    | [<AltCommandLine("-es")>] EndStrategy of endstrategy:BoundaryStrategy option
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | Start _ -> "Truncate the beginning of the input stream."
-            | StartStrategy _ -> "How the start point is enforced."
-            | Count _ -> "Return only this number of values. Positive number counts from start; negative counts from end."
-            | End _ -> "Truncate the end of the input stream."
-            | EndStrategy _ -> "How the end point is enforced."
-and RemodelArgs =
-    | [<Hidden>] Dummy of dummy:string option
-with
-    interface IArgParserTemplate with
-        member this.Usage =
-            match this with
-            | _ -> "Remodel has no arguments, but uses a ParserTemplate for uniformity with other top-level operations."
-and TacsArgs =
+            | PositionType _ -> "The data type of the sequence's position, i.e. x-axis."
+            | ValueType _ -> "The value type and interpolation scheme of the sequence's value, i.e. y-axis"
+
+type TacsArgs =
     | [<AltCommandLine("-i")>] Input of input:string option
     | [<AltCommandLine("-o")>] Output of output:string option
     | [<CliPrefix(CliPrefix.None)>] Remodel of ParseResults<RemodelArgs>
     | [<CliPrefix(CliPrefix.None)>] Slice of ParseResults<SliceArgs>
-    | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
-    | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>
-    | [<CliPrefix(CliPrefix.None)>] Compress of ParseResults<CompressArgs>
+    // | [<CliPrefix(CliPrefix.None)>] Project of ParseResults<ProjectArgs>
+    // | [<CliPrefix(CliPrefix.None)>] Aggregate of ParseResults<AggregateArgs>
+    // | [<CliPrefix(CliPrefix.None)>] Sample of ParseResults<SampleArgs>
+    // | [<CliPrefix(CliPrefix.None)>] Compress of ParseResults<CompressArgs>
 with
     interface IArgParserTemplate with
         member this.Usage = 
@@ -162,6 +92,7 @@ with
             | Output _ -> "Write resultant stream to a file. If not specified, writes to stdout."
             | Remodel _ -> "Transform a series of discrete points into a series of intervals, and vice versa."
             | Slice _ -> "Slice the input stream by minimum and/or maximum position values."
-            | Aggregate _ -> "Aggregate the input stream."
-            | Sample _ -> "Sample the input stream."
-            | Compress _ -> "Compress the input stream."
+            // | Project _ -> "Project the input stream values into a different type. (Map)"
+            // | Aggregate _ -> "Aggregate the input stream. (Reduce)"
+            // | Sample _ -> "Sample the input stream."
+            // | Compress _ -> "Compress the input stream."
