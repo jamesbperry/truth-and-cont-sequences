@@ -25,6 +25,13 @@ module TimeOps =
         let del = TimeSpan.FromTicks <| int64 (float dv.Ticks * npos)
         pti.value + del
 
+    type ITimeValue<'p> =
+        inherit IIntervalValue<'p,DateTimeOffset>
+        // abstract member Min: unit -> DateTimeOffset //TODO
+        // abstract member Max: unit -> DateTimeOffset
+        // abstract member Mean: unit -> DateTimeOffset
+        // abstract member Range: unit -> TimeSpan
+
     type LinearTimeValue<'p> = 
         {pstart:PointValue<'p,DateTimeOffset>;pend:PointValue<'p,DateTimeOffset>} with
         interface IIntervalValue<'p,DateTimeOffset> with
@@ -34,9 +41,11 @@ module TimeOps =
                 let vmid = (this :> IIntervalValue<'p,DateTimeOffset>).At pn p
                 let pmid = {position=p;value=vmid}
                 (asi {this with pend=pmid},asi {this with pstart=pmid})
+        interface ITimeValue<'p>
+        end                    
 
     let LinearTimeValue (pstart,pend) =
-        {LinearTimeValue.pstart=pstart;pend=pend}
+        {LinearTimeValue.pstart=pstart;pend=pend} :> ITimeValue<'p>
 
     let LinearTimeInterval (startb:BoundaryValue<'p,DateTimeOffset>,endb:BoundaryValue<'p,DateTimeOffset>) =
         {startbound=startb.position;endbound=endb.position;value={LinearTimeValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb}}  //value :> ITimeValue<_> //TODO

@@ -67,7 +67,7 @@ module FloatOps =
             member this.Range () = abs <| this.pstart.value - this.pend.value
 
     let LinearFloatValue (pstart,pend) =
-        {pstart=pstart;pend=pend}
+        {pstart=pstart;pend=pend} :> IFloatValue<'p>
 
     let LinearFloatInterval (startb:BoundaryValue<'p,float>,endb:BoundaryValue<'p,float>) =
         {startbound=startb.position;endbound=endb.position;value={LinearFloatValue.pstart=PointValue.ofBoundary startb;pend=PointValue.ofBoundary endb} :> IFloatValue<_>}      
@@ -98,23 +98,28 @@ module FloatOps =
     //         member this.Range () = this._Max () - this._Min ()
 
 
-    let Aggregate (np:FloatValuedIntervalsNormalizer<'p>) op (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+    let AggregateRunning (np:FloatValuedIntervalsNormalizer<'p>) op (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         let norms = np 1.0 inseq.intvalues
         let integs = Seq.map op norms
         let runningpairs = Seq.scan (+) 0.0 integs |> Seq.pairwise
         List.ofSeq <| Seq.map2 (fun i (_,ev) -> ConstantFloatInterval (i.startbound,i.endbound) ev) inseq.intvalues runningpairs
 
+    let AggregateEach (np:FloatValuedIntervalsNormalizer<'p>) op (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
+        let norms = np 1.0 inseq.intvalues
+        let integs = Seq.map op norms
+        List.ofSeq <| Seq.map2 (fun i v -> ConstantFloatInterval (i.startbound,i.endbound) v) inseq.intvalues integs    
+
     let Total (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Total nint.weight) inseq
+        AggregateEach np (fun nint -> nint.interval.value.Total nint.weight) inseq
 
     let Mean (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Mean ()) inseq
+        AggregateEach np (fun nint -> nint.interval.value.Mean ()) inseq
 
     let Maximum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Max ()) inseq
+        AggregateEach np (fun nint -> nint.interval.value.Max ()) inseq
 
     let Minimum (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Min ()) inseq
+        AggregateEach np (fun nint -> nint.interval.value.Min ()) inseq
 
     let Range (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        Aggregate np (fun nint -> nint.interval.value.Range ()) inseq
+        AggregateEach np (fun nint -> nint.interval.value.Range ()) inseq

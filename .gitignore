@@ -288,3 +288,4 @@ __pycache__/
 *.xsd.cs
 /src/Tacs/Tacs.CoreCS
 /src/Tacs/Tacs.ConsoleCS
+src/Tacs/Tacs.Cli/testout.fson
