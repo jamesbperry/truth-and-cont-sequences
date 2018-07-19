@@ -112,7 +112,8 @@ module Sequence =
                     | Inclusive _ -> yield {position=int.startbound.position;value=(int.value.At pn int.startbound.position)}
                     | _ -> ()
                     match int.endbound with
-                    | Inclusive _ -> yield {position=int.endbound.position;value=int.value.At pn int.endbound.position}
+                    | Inclusive _ when int.startbound <> int.endbound -> 
+                        yield {position=int.endbound.position;value=int.value.At pn int.endbound.position}
                     | _ -> ()
             } |> List.ofSeq        
         let hasfray = 

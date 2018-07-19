@@ -27,4 +27,11 @@ let subseq = Sequence.sliceByInterval IntegerPosition sliceStrat intseq
 
 printfn "\n\nAfter being sliced to between positions 2 and 5, the sequence is %A" subseq
 let mean = FloatOps.Mean OnIntPosition subseq
+
 printfn "\n\nThe sequence's time-weighted mean is %A" mean
+let result = Sequence.remodelToPoints IntegerPosition InclusiveLow 
+                { intseq with intvalues = mean }
+
+printfn "\n\nRemodeled to points, this is %A" result
+
+//TODO windowing once it's fixed

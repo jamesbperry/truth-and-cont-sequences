@@ -109,8 +109,8 @@ module FloatOps =
         let integs = Seq.map op norms
         List.ofSeq <| Seq.map2 (fun i v -> ConstantFloatInterval (i.startbound,i.endbound) v) inseq.intvalues integs    
 
-    let Total (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
-        AggregateEach np (fun nint -> nint.interval.value.Total nint.weight) inseq
+    let Total (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list = //hmmm...
+        AggregateRunning np (fun nint -> nint.interval.value.Total nint.weight) inseq
 
     let Mean (np:FloatValuedIntervalsNormalizer<'p>) (inseq:FloatValuedSequence<'p>) : FloatValuedInterval<'p> list =
         AggregateEach np (fun nint -> nint.interval.value.Mean ()) inseq
